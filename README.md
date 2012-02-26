@@ -51,8 +51,8 @@ To start a new session, you'll need to restart the Arduino.
 ## In action
 
 ### Prototype during testing
-![Prototype during testing](images/prototype.jpg)
+![Prototype during testing](https://github.com/reefab/CyclingPusher/raw/master/images/prototype.jpg)
 ### Runkeeper's screenshot
-![Runkeeper screenshot](images/BikeProjectRunkeeper.png)
+![Runkeeper screenshot](https://github.com/reefab/CyclingPusher/raw/master/images/BikeProjectRunkeeper.png)
 ### Reed Switch (in the top of the picture)
-![Stationary bike's reed switch and magnetic brake](images/bike.jpg)
+![Stationary bike's reed switch and magnetic brake](https://github.com/reefab/CyclingPusher/raw/master/images/bike.jpg)
