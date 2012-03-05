@@ -1,0 +1,19 @@
+/*
+ * Cycling Pusher Configuration
+ *
+ * Copy this file to "config.h" and edit.
+ *
+ *  Created on: 5.03.2012
+ *      Author: reefab
+ */
+
+#include <Arduino.h>
+
+// MAC address
+static uint8_t mac[6] = { 
+  0x90, 0xA2, 0xDA, 0x05, 0x00, 0x43 };
+// Distance per 'wheel' turn
+const float meterPerTurn = 6;
+
+// Access Token
+#define accessToken "Bearer XXXXXXXXXX"
