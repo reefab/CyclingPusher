@@ -34,7 +34,6 @@ EthernetClient client;
 #include "runkeeper.h"
 #include "ntp.h"
 
-
 // This needs to be pin 2 to use interrupt 0
 #define reedPin 2
 #define buttonPin 3

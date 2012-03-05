@@ -13,22 +13,18 @@ byte serverIp[] = {
   74,50,63,142};
 #define apiServer "api.runkeeper.com"
 #define apiUri "/fitnessActivities"
-#define json_start "{\"type\": \"Cycling\",\"start_time\": \""
-#define json_middle_1 "\",\"notes\": \"Arduino powered stationary bike\",\"total_distance\": "
-#define json_middle_2 ",\"duration\": "
-#define json_end "}"
 
 HTTPClient http_client(apiServer, serverIp);
 
-boolean uploadResult(String startTimeStr, int totalDistance, int effectiveTime)
+boolean uploadResult(String startTimeStr, unsigned int totalDistance, unsigned int effectiveTime)
 {
-    String data = json_start;
+    String data = "{\"type\": \"Cycling\",\"start_time\": \"";
     data += startTimeStr;
-    data += json_middle_1;
+    data += "\",\"notes\": \"Arduino powered stationary bike\",\"total_distance\": ";
     data += totalDistance;
-    data += json_middle_2;
+    data += ",\"duration\": ";
     data += (int) (effectiveTime / 1000);
-    data += json_end;
+    data += "}";
     unsigned int bufSize = data.length() +1;
     char apiData[bufSize];
     data.toCharArray(apiData, bufSize);
