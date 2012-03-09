@@ -36,13 +36,22 @@ EthernetClient client;
 
 // This needs to be pin 2 to use interrupt 0
 #define reedPin 2
+// This needs to be pin 3 to use interrupt 1
 #define buttonPin 3
+// Led backlight
+#define ledblPin A0
 // Number of 'wheel' turns needed to recalculate speed/total distance 
 #define interval 5
 // Minimal number of millisecond between reed switch changes to prevent bounce
 #define reedRes 50
 // Timeout in seconds, if the reed switch is not activated during this time, pause everything 
 #define timeOut 15
+// Time in seconds before the backlight of the LCD is switched off if there is no activity
+#define displaySleep 60
+// Minimum distance for a valid activity (in meters)
+#define minDistance 500
+// least amount of time for a valid activity (in secs)
+#define minTime 60
 
 // Global Vars
 unsigned int rotationCount = 0;
@@ -53,15 +62,15 @@ float currentSpeed = 0;
 boolean screen = true;
 boolean done = false;
 boolean uploaded = false;
+boolean backlight = false;
+boolean paused = false;
 unsigned long lastReedPress = millis();
 unsigned long lastButtonPress = millis();
 unsigned long lastUpdate = millis();
 unsigned long currentTime = millis();
 unsigned long startTime = millis();
-unsigned long totalTime = 0;
 unsigned long time_elasped = 0;
 unsigned long effectiveTime = 0;
-//unsigned long lastTimeUpdate = 0;
 // For display during init and sending via API
 String startTimeStr;
 
@@ -70,9 +79,11 @@ String startTimeStr;
 void setup() {
   pinMode(reedPin, INPUT);
   pinMode(buttonPin, INPUT);
-  // set up the LCD's number of columns and rows: 
-  lcd.begin(16, 2);
+  pinMode(ledblPin, OUTPUT);
 
+  // LCD Init 
+  lcd.begin(16, 2);
+  switchBacklight(true);
   lcd.print("Starting up");
   lcd.setCursor(0, 1);
   lcd.print("Getting IP");
@@ -81,7 +92,6 @@ void setup() {
   attachInterrupt(0, turnCounter, FALLING);
   // Action Button
   attachInterrupt(1, actionButton, FALLING);
-  Serial.begin(9600);
 
   // start Ethernet and UDP
   if (Ethernet.begin(mac) == 0) {
@@ -98,14 +108,28 @@ void setup() {
     displayInitScreen();
   }
   lcd.clear();
+  lastButtonPress = millis();
+  lastReedPress = millis();
 }
 
 void loop() {
   // Activity finished & api push
   if (done == true && !client.connected() && !uploaded) {
+    lcd.clear();
+    lcd.print("Activity"); 
+    lcd.setCursor(0, 1);
+    lcd.print("finished");
     delay(1000);
     lcd.clear();
-    uploaded = uploadResult(startTimeStr, totalDistance, effectiveTime);
+
+    if ( (totalDistance > minDistance) && (effectiveTime > minTime)) {
+      uploaded = uploadResult(startTimeStr, totalDistance, effectiveTime);
+    } 
+    else {
+      lcd.print("Need more data");
+      delay(1000);
+      done = false;
+    }
   } 
   else {
     // Activity in progres
@@ -126,7 +150,7 @@ void loop() {
     if(millis() - lastReedPress < (1000 * timeOut))
     {
       // Display
-      lcd.setCursor(0,0);
+      lcd.clear();
       if (screen == true) {
         displayCurrentScreen();
       } 
@@ -136,17 +160,16 @@ void loop() {
       delay(500);
       unsigned long exitLoop = millis();
       effectiveTime = effectiveTime + (exitLoop - enterLoop);
-
-    } else {
+    } 
+    else {
       // Automatic activity pause
-      // Deactivate the "Change Screen Button"
-      detachInterrupt(1);
-      // Activate the finish function instead at button press
-      delay(500);
-      attachInterrupt(1, finishActivity, FALLING);
+      paused = true;
       displayPauseScreen();
-      detachInterrupt(1);
-      attachInterrupt(1, actionButton, FALLING);
+      // Display sleep if needed
+      if ((( (millis() - lastReedPress) > (1000 * displaySleep))) && backlight)
+      {
+        switchBacklight(false);
+      }
     }
   }
 }
@@ -157,32 +180,43 @@ void turnCounter() {
     rotationCount++;
   }
   lastReedPress = millis();
+  if (!backlight) { 
+    switchBacklight(true);   
+  }
 }
 
 void actionButton() {
   if (millis() - lastButtonPress > 200)
   {
-    screen = !screen;
-    lcd.clear();
+    if (paused) {
+      done = true;
+    } else {
+      screen = !screen;
+    }
   }
   lastButtonPress = millis();
+  if (!backlight) { 
+    switchBacklight(true);   
+  }
 }
 
 float getAverageSpeed() {
-  totalTime = getTotalTime();
-  return ((float) totalDistance / (float) totalTime) * 3600;
+  return ((float) totalDistance / (float) effectiveTime) * 3600;
 }  
 
-unsigned long getTotalTime() {
-  return effectiveTime;
+void switchBacklight(boolean bl)
+{
+  if (bl)
+  {
+    digitalWrite(ledblPin, HIGH);
+    backlight = true;
+  } 
+  else {
+    digitalWrite(ledblPin, LOW);
+    backlight = false;
+  }
 }
 
-void finishActivity() {
-  lcd.clear();
-  lcd.print("Activity"); 
-  lcd.setCursor(0, 1);
-  lcd.print("finished");
-  done = true;
-}
+
 
 

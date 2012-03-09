@@ -20,10 +20,9 @@ void displayGlobalScreen() {
   lcd.print(getAverageSpeed());
   lcd.print("km/h");
   lcd.setCursor(0, 1);
-  totalTime = getTotalTime();
-  int hours = totalTime / 3600000;
-  int minutes = totalTime / 60000;
-  long seconds = (totalTime % 60000);
+  int hours = effectiveTime / 3600000;
+  int minutes = effectiveTime / 60000;
+  long seconds = (effectiveTime % 60000);
   seconds = (long) seconds / 1000;
   String time = "Time: "
     + String(hours)
@@ -35,11 +34,8 @@ void displayGlobalScreen() {
 void displayPauseScreen() {
   lcd.clear();
   lcd.print("Activity paused.");
-  delay(1000);
-  lcd.clear();
-  lcd.print("Press button ");
   lcd.setCursor(0, 1);
-  lcd.print("to finish");
+  lcd.print("Upload result?");
   delay(1000);
 }
 
