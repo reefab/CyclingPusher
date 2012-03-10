@@ -5,7 +5,7 @@
 This project provides an [Arduino](http://arduino.cc/) sketch that can power an Arduino + Ethernet Shield (or Arduino with built-in ethernet) to make a stationary bike computer that can upload Cycling sessions results to [Runkeeper](http://runkeeper.com/)'s [Healthgraph API](http://developer.runkeeper.com/healthgraph), where it get added to the user's activities feed.
 The activity can then be posted to Twitter or Facebook automatically by Runkeeper.
 
-It doesn't need to be connected to a computer for that purpose, only a wired ethernet connection + dhcp is required.
+It doesn't need to be connected to a computer for that purpose, only a wired ethernet connection + DHCP is required.
 
 It'll also display either current speed and total distance or average speed and elapsed time during normal use via a LCD.
 
@@ -13,24 +13,24 @@ The sensor used is the [reed switch](http://en.wikipedia.org/wiki/Reed_switch) t
 
 The elapsed time only counts 15 seconds chunks when there was some activity, otherwise it'll pause.
 
-When pausing, pressing the Action button ends the cycling session and uploads the:
+If the pause last more than 5 minutes, it'll upload to Runkeeper the:
 
  * Starting Time
  * Total Distance
  * Elapsed Time
 
-for the current session. Afterwards, the Arduino needs to be restarted to start a new one.
+for the current session.
 
 ## Use
 
 Plug the ethernet cable and the USB cable in.
 The Arduino will display its IP address and the current UTC time that it obtained via NTP.
 
-Pedal away and it'll display the current speed and total distance. Press the Action button to switch to average speed and elapsed time.
+Pedal away and it'll display the current speed while cycling between the total distance. average speed and elapsed time.
 
-Stop pedaling for ~ 15 seconds and the pause screen will come up. Press the Action button and it'll end the session and upload the result.
+Stop pedaling for ~ 15 seconds and the pause screen will come up. 60 seconds, the lcd's backlight will be switched off. 5 minutes and it'll end the session and upload the result or discard the session if the "valid activity" threshold hasn't been reached.
 
-To start a new session, you'll need to restart the Arduino.
+To start a new session, just use the bike again, it'll start over.
 
 ## In action
 
@@ -38,7 +38,7 @@ To start a new session, you'll need to restart the Arduino.
 ![Prototype during testing](https://github.com/reefab/CyclingPusher/raw/master/images/prototype.jpg)
 ### Runkeeper's screenshot
 ![Runkeeper screenshot](https://github.com/reefab/CyclingPusher/raw/master/images/BikeProjectRunkeeper.png)
-### Reed Switch (in the top of the picture)
+### Reed Switch (at the top of the picture)
 ![Stationary bike's reed switch and magnetic brake](https://github.com/reefab/CyclingPusher/raw/master/images/bike.jpg)
 
 ## Setup
@@ -62,7 +62,7 @@ The wiring diagram will be provided later.
 
 ### How to get access token
 
-First, once you have your Runkeeper's account got to:
+First, once you have your Runkeeper account got to:
 
 http://runkeeper.com/partner/applications/registerForm
 
