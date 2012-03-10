@@ -74,4 +74,9 @@ String getTimeString() {
   return str_time; 
 }
 
+String setStartTime() {
+  Udp.begin(localPort);
+  setTime(getTimeStamp());
+  return getTimeString();
+}
 
