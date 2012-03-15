@@ -117,15 +117,13 @@ void setup() {
 
 void reset(boolean startNew=false)
 {
-  // Global Vars
   rotationCount = 0;
   updateCount = 0;
-  // Distance in meters
   totalDistance = 0;
   currentSpeed = 0;
   done = false;
   uploaded = false;
-  lastReedPress = 0;
+  lastReedPress = millis();
   lastUpdate = 0;
   currentTime = 0;
   startTime = 0;
@@ -225,7 +223,7 @@ void turnCounter() {
 
 boolean isSessionValid()
 {
-  return ((totalDistance > minDistance) && (effectiveTime > minTime));
+  return ((totalDistance > (unsigned int) minDistance) && (effectiveTime > ((unsigned long) minTime * 1000)));
 }
 
 

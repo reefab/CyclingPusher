@@ -6,6 +6,7 @@ String firstLine;
 String secondLine;
 unsigned long lastSecondLineChange = 0;
 int currentSecondLine = 0;
+float avgSpeed = 0;
 
 String floatToString(float float_val)
 {
@@ -62,7 +63,7 @@ String getTimeLine() {
 
 String getAvgSpeedLine() {
   String line ="Avg:   ";
-  line += floatToString(getAverageSpeed());
+  line += floatToString(avgSpeed);
   line += "km/h";
   return line;
 }
@@ -78,6 +79,7 @@ void displayInfo() {
   if ( (millis() - lastSecondLineChange) > ((unsigned long) changeSecondLine * 1000)) {
     currentSecondLine = (currentSecondLine + 1) % numberOfSecondLine;
     lastSecondLineChange = millis();
+    avgSpeed = getAverageSpeed();
   }
   lcd.setCursor(0, 1);
   switch (currentSecondLine) {
@@ -103,7 +105,7 @@ void displayInitScreen() {
   delay(2500); 
   lcd.setCursor(0, 1);
   for (int i = 1;i < 32;i++) lcd.print(" ");
-  lcd.setCursor(4, 1);
+  lcd.setCursor(3, 1);
   for (int i = 16;i < startTimeStr.length();i++) lcd.print(startTimeStr.charAt(i));
   delay(2500);
 }
