@@ -82,6 +82,12 @@ String startTimeStr;
 
 #include "display.h"
 
+int freeRam () {
+  extern int __heap_start, *__brkval; 
+  int v; 
+  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval); 
+}
+
 void setup() {
   pinMode(reedPin, INPUT);
   pinMode(ledblPin, OUTPUT);
@@ -113,6 +119,7 @@ void setup() {
   }
   lcd.clear();
   lastReedPress = millis();
+  Serial.begin(9600);
 }
 
 void reset(boolean startNew=false)
@@ -201,6 +208,9 @@ void loop() {
         resetRequested = true;
       }
     }
+//    Serial.println("\n[free RAM]");
+//    Serial.println(freeRam());
+//    Serial.println("Still Alive");
     displayInfo();
   }
 }

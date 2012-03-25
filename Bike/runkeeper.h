@@ -16,11 +16,11 @@ byte serverIp[] = {
 
 HTTPClient http_client(apiServer, serverIp);
 
-boolean uploadResult(String startTimeStr, unsigned int totalDistance, unsigned int effectiveTime)
+boolean uploadResult(String startTimeStr, unsigned int totalDistance, unsigned long effectiveTime)
 {
     String data = "{\"type\": \"Cycling\",\"start_time\": \"";
     data += startTimeStr;
-    data += "\",\"notes\": \"Arduino powered stationary bike\",\"total_distance\": ";
+    data += "\",\"total_distance\": ";
     data += totalDistance;
     data += ",\"duration\": ";
     data += (int) (effectiveTime / 1000);
@@ -41,6 +41,7 @@ boolean uploadResult(String startTimeStr, unsigned int totalDistance, unsigned i
     };
     lcd.print("Uploading result");
     delay(500);
+    http_client.debug(-1);
     FILE* result = http_client.postURI(apiUri, NULL, apiData, apiHeaders);
     int returnCode = http_client.getLastReturnCode();
     lcd.clear();

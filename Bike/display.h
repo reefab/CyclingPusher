@@ -18,6 +18,15 @@ String floatToString(float float_val)
   }
 }
 
+String restrictIn16Chars(String line)
+{
+ if (line.length() > 16) { 
+   return line.substring(0, 17);
+ } else {
+   return line;
+ }
+}
+
 String getCurrentSpeedLine()
 {
   String line = "Speed: ";
@@ -43,7 +52,7 @@ float getAverageSpeed() {
   if (effectiveTime == 0) {
     return 0;
   } else {
-    return ((float) totalDistance / (float) effectiveTime) * 3600;
+    return (float) ((float) totalDistance / effectiveTime) * 3600;
   }
 }  
 
@@ -51,12 +60,12 @@ String getTimeLine() {
   int hours = effectiveTime / 3600000;
   int minutes = effectiveTime / 60000;
   if (minutes > 59) minutes = minutes % 60;
-  long seconds = (effectiveTime % 60000);
-  seconds = (long) seconds / 1000;
+  unsigned long seconds = (effectiveTime % 60000);
+  seconds = seconds / 1000;
   String time = "Time: "
     + String(hours)
     + prettyDigits(minutes) 
-      + prettyDigits(seconds);
+      + prettyDigits((int) seconds);
   time += "   ";
   return time;
 }
@@ -74,8 +83,8 @@ void displayInfo() {
   } else {
     firstLine = getCurrentSpeedLine();
   }
-  lcd.setCursor(0, 0);
-  lcd.print(firstLine);
+  lcd.clear();
+  lcd.print(restrictIn16Chars(firstLine));
   if ( (millis() - lastSecondLineChange) > ((unsigned long) changeSecondLine * 1000)) {
     currentSecondLine = (currentSecondLine + 1) % numberOfSecondLine;
     lastSecondLineChange = millis();
@@ -89,11 +98,11 @@ void displayInfo() {
     case 1:
       secondLine = getDistanceLine();
       break;
-     case 2:
+    case 2:
        secondLine = getAvgSpeedLine();
        break;
   }
-  lcd.print(secondLine);
+  lcd.print(restrictIn16Chars(secondLine));
 }
 
 void displayInitScreen() {
@@ -122,4 +131,6 @@ void switchBacklight(boolean bl)
     backlight = false;
   }
 }
+
+
 
