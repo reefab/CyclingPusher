@@ -56,20 +56,9 @@ EthernetClient client;
 #define changeSecondLine 5
 
 // Global Vars
-int nbRotation = 0;
-unsigned int rotationCount = 0;
+unsigned int nbRotation = 0;
 unsigned int updateCount = 0;
-// Distance in meters
 unsigned int totalDistance = 0;
-float currentSpeed = 0;
-
-boolean done = false;
-boolean uploaded = false;
-boolean backlight = false;
-boolean paused = false;
-boolean resetRequested = false;
-boolean start = false;
-unsigned long lastReedPress = 0;
 unsigned long lastUpdate = 0;
 unsigned long currentTime = 0;
 unsigned long startTime = 0;
@@ -77,8 +66,17 @@ unsigned long enterLoop = 0;
 unsigned long exitLoop = 0;
 unsigned long time_elasped = 0;
 unsigned long effectiveTime = 0;
+volatile boolean backlight = false;
+volatile boolean paused = false;
+volatile boolean resetRequested = false;
+volatile boolean start = false;
+volatile unsigned long lastReedPress = 0;
+volatile unsigned int rotationCount = 0;
 // For display during init and sending via API
 String startTimeStr;
+float currentSpeed = 0;
+boolean done = false;
+boolean uploaded = false;
 
 #include "display.h"
 
@@ -100,7 +98,7 @@ void setup() {
   lcd.print("Getting IP...");
 
   // Reed switch handling by interrupt
-  attachInterrupt(0, turnCounter, FALLING);
+  attachInterrupt(0, turnCounter, RISING);
 
   // start Ethernet
   if (Ethernet.begin(mac) == 0) {
