@@ -34,8 +34,9 @@ To start a new session, just use the bike again, it'll start over.
 
 ## In action
 
-### Prototype during testing
-![Prototype during testing](https://github.com/reefab/CyclingPusher/raw/master/images/prototype.jpg)
+### Device
+![](https://github.com/reefab/CyclingPusher/raw/master/images/finishedVersion.jpg)
+[Prototype during testing](https://github.com/reefab/CyclingPusher/raw/master/images/prototype.jpg)
 ### Runkeeper's screenshot
 ![Runkeeper screenshot](https://github.com/reefab/CyclingPusher/raw/master/images/BikeProjectRunkeeper.png)
 ### Reed Switch (at the top of the picture)
