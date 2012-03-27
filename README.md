@@ -2,7 +2,7 @@
 
 ## Description
 
-This project provides an [Arduino](http://arduino.cc/) sketch that can power an Arduino + Ethernet Shield (or Arduino with built-in ethernet) to make a stationary bike computer that can upload Cycling sessions results to [Runkeeper](http://runkeeper.com/)'s [Healthgraph API](http://developer.runkeeper.com/healthgraph), where it get added to the user's activities feed.
+This project provides an [Arduino](http://arduino.cc/) sketch that can power an Arduino + Ethernet Shield (or Arduino with built-in ethernet) to make a stationary bike computer that can upload Cycling workout sessions results to [Runkeeper](http://runkeeper.com/)'s [Healthgraph API](http://developer.runkeeper.com/healthgraph), where it get added to the user's activities feed.
 The activity can then be posted to Twitter or Facebook automatically by Runkeeper.
 
 It doesn't need to be connected to a computer for that purpose, only a wired ethernet connection + DHCP is required.
@@ -21,9 +21,9 @@ If the pause last more than 5 minutes, it'll upload to Runkeeper the:
 
 for the current session.
 
-## Use
+## Usage
 
-Plug the ethernet cable and the USB cable in.
+Plug the ethernet cable and the USB/Power cable in.
 The Arduino will display its IP address and the current UTC time that it obtained via NTP.
 
 Pedal away and it'll display the current speed while cycling between the total distance. average speed and elapsed time.
@@ -61,7 +61,7 @@ The reed switch needs to be plugged in Pin2 to use the Arduino's hardware interr
 The [Fritzing](http://fritzing.org/) Schema file is available in the `Schematics` directory.
 Here is the breadboard view:
 
-![Breadboard view](https://github.com/reefab/CyclingPusher/raw/master/images/cyclingPusher_bb.png)
+![Breadboard view](https://github.com/reefab/CyclingPusher/raw/master/Schematics/cyclingPusher_bb.png)
 
 ### Configuration
 
@@ -94,8 +94,3 @@ Now, in a shell:
 Please note that the 'redirect_uri' needs to the be exact same one as before.
 
 It'll then give you the access token you can use in your Arduino's code.
-
-
-
-
-
