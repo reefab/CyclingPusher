@@ -35,7 +35,7 @@ To start a new session, just use the bike again, it'll start over.
 ## In action
 
 ### Device
-![](https://github.com/reefab/CyclingPusher/raw/master/images/finishedVersion.jpg)
+![Device in clear enclosure](https://github.com/reefab/CyclingPusher/raw/master/images/finishedVersion.jpg)
 [Prototype during testing](https://github.com/reefab/CyclingPusher/raw/master/images/prototype.jpg)
 ### Runkeeper's screenshot
 ![Runkeeper screenshot](https://github.com/reefab/CyclingPusher/raw/master/images/BikeProjectRunkeeper.png)
@@ -54,12 +54,19 @@ You'll need:
  * [Time library](http://arduino.cc/playground/Code/Time)
  * [HTTPClient library](http://interactive-matter.eu/how-to/arduino-http-client-library/)
 
-The reed switch needs to be plugged in Pin2 and the Action button in Pin3 to use the Arduino's hardware interrupts.
+The reed switch needs to be plugged in Pin2 to use the Arduino's hardware interrupts.
 
-You'll need to modify/provide the MAC address and Healthgraph's access token in the Bike.ino file.
+### Schematics
+
+The [Fritzing](http://fritzing.org/) Schema file is available in the `Schematics` directory.
+Here is the breadboard view:
+
+![Breadboard view](https://github.com/reefab/CyclingPusher/raw/master/images/cyclingPusher_bb.png)
+
+### Configuration
+
+You'll need to modify/provide the MAC address and Healthgraph's access token in the config.h (that you'll copy from config.h-dist) file.
 You might want to change the number of meters per reed switch activation too.
-
-The wiring diagram will be provided later.
 
 ### How to get access token
 
