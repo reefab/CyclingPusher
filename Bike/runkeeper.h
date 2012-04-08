@@ -13,16 +13,28 @@ byte serverIp[] = {
   74,50,63,142};
 #define apiServer "api.runkeeper.com"
 #define apiUri "/fitnessActivities"
+#define json_str1 "{\"type\": \"Cycling\",\"start_time\": \""
+#define json_str2 "\",\"total_distance\": "
+#define json_str3 ",\"duration\": "
+#define header_str1 "Authorization"
+#define header_str2 "Content-Type"
+#define header_str3 "application/vnd.com.runkeeper.NewFitnessActivity+json"
+#define status_inprogress "Uploading result"
+#define status_failure "failed to connect"
+#define status_data_uploaded "Data uploaded"
+#define status_session_created "Session Created"
+#define status_error_code "ERROR: Server returned "
 
 HTTPClient http_client(apiServer, serverIp);
 
 boolean uploadResult(String startTimeStr, unsigned int totalDistance, unsigned long effectiveTime)
 {
-    String data = "{\"type\": \"Cycling\",\"start_time\": \"";
+    String data; 
+    data += json_str1;
     data += startTimeStr;
-    data += "\",\"total_distance\": ";
+    data += json_str2;
     data += totalDistance;
-    data += ",\"duration\": ";
+    data += json_str3;
     data += (int) (effectiveTime / 1000);
     data += "}";
     unsigned int bufSize = data.length() +1;
@@ -31,15 +43,15 @@ boolean uploadResult(String startTimeStr, unsigned int totalDistance, unsigned l
 
     http_client_parameter apiHeaders[] = {
       { 
-        "Authorization", accessToken      }
+        header_str1, accessToken      }
       ,
       { 
-        "Content-Type", "application/vnd.com.runkeeper.NewFitnessActivity+json"      }
+        header_str2, header_str3  }
       ,
       {
         NULL, NULL      }
     };
-    lcd.print("Uploading result");
+    lcd.print(status_inprogress);
     delay(500);
     http_client.debug(-1);
     FILE* result = http_client.postURI(apiUri, NULL, apiData, apiHeaders);
@@ -49,16 +61,16 @@ boolean uploadResult(String startTimeStr, unsigned int totalDistance, unsigned l
       http_client.closeStream(result);  // this is very important -- be sure to close the STREAM
     } 
     else {
-      lcd.print("failed to connect");
+      lcd.print(status_failure);
     }
     if (returnCode==201) {
-      lcd.print("Data uploaded");
+      lcd.print(status_data_uploaded);
       lcd.setCursor(0, 1);
-      lcd.print("Session Created");
+      lcd.print(status_session_created);
       return true;
     } 
     else {
-      lcd.print("ERROR: Server returned ");
+      lcd.print(status_error_code);
       lcd.setCursor(0, 1);
       lcd.print(returnCode);
       return false;

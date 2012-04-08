@@ -203,12 +203,13 @@ void loop() {
         lcd.clear();
         lcd.print("Discarding data.");
         delay(5000);
+        switchBacklight(false);
         resetRequested = true;
       }
     }
-//    Serial.println("\n[free RAM]");
-//    Serial.println(freeRam());
-//    Serial.println("Still Alive");
+    Serial.println("\n[free RAM]");
+    Serial.println(freeRam());
+
     displayInfo();
   }
 }

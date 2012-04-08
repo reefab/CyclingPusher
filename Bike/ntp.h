@@ -1,3 +1,13 @@
+#define SECS_PER_MIN  (60UL)
+#define SECS_PER_HOUR (3600UL)
+#define SECS_PER_DAY  (SECS_PER_HOUR * 24L)
+
+/* Useful Macros for getting elapsed time */
+#define numberOfSeconds(_time_) (_time_ % SECS_PER_MIN)  
+#define numberOfMinutes(_time_) ((_time_ / SECS_PER_MIN) % SECS_PER_MIN)
+#define numberOfHours(_time_) (( _time_% SECS_PER_DAY) / SECS_PER_HOUR)
+#define elapsedDays(_time_) ( _time_ / SECS_PER_DAY)  
+
 // NTP
 const unsigned int localPort = 8888;      // local port to listen for UDP packets
 const int NTP_PACKET_SIZE= 48; // NTP time stamp is in the first 48 bytes of the message
@@ -52,6 +62,7 @@ unsigned long getTimeStamp() {
   }    
 }
 
+
 String prettyDigits(int digits){
   // utility function for digital clock display: prints preceding colon and leading 0
   String output = ":";
@@ -59,6 +70,20 @@ String prettyDigits(int digits){
     output += '0';
   output += digits;
   return output;
+}
+
+String elaspedTime(unsigned long time){  
+ time = time / 1000UL;
+ int hours = numberOfHours(time);
+ int minutes = numberOfMinutes(time);
+ int seconds = numberOfSeconds(time);
+
+  String timeStr = " ";
+  // digital clock display
+  timeStr = String(hours)
+  + prettyDigits(minutes) 
+  + prettyDigits(seconds);
+  return timeStr;
 }
 
 String getTimeString() {
