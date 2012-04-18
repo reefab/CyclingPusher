@@ -1,67 +1,52 @@
-//#include <EEPROM.h>
-
-void saveProgress(String startTimeStr, unsigned int totalDistance, unsigned long effectiveTime, unsigned int offset=1) {
+void saveProgress(String startTimeStr, unsigned int totalDistance, unsigned long effectiveTime,boolean erase=false) {
 
   unsigned int time = effectiveTime / 1000UL;
   int str_size = startTimeStr.length();
 
   // To indicate a save is present
-  EEPROM.write(0, 1);
+  if (erase) {
+    EEPROM.write(0, 0);
+  } else {
+    EEPROM.write(0, 1);
+  }
 
-  EEPROM.write(offset, highByte(time));
-  EEPROM.write(offset + 1, lowByte(time));
-  EEPROM.write(offset + 2, highByte(totalDistance));
-  EEPROM.write(offset + 3, lowByte(totalDistance));
-  EEPROM.write(offset + 4, str_size);
+  EEPROM.write(1, highByte(time));
+  EEPROM.write(2, lowByte(time));
+  EEPROM.write(3, highByte(totalDistance));
+  EEPROM.write(4, lowByte(totalDistance));
+  EEPROM.write(5, str_size);
 
-  for (int i = 0;i <= str_size;i++) 
+  for (int i = 0;i < str_size;i++) 
   {
-    EEPROM.write(offset + 5 + i, startTimeStr.charAt(i));
+    EEPROM.write(6 + i, startTimeStr.charAt(i));
   }
 
 }
 
-void eraseProgress(unsigned int offset=1) {  
-  EEPROM.write(offset, 0);
-  EEPROM.write(offset + 1, 0);
-  EEPROM.write(offset + 2, 0);
-  EEPROM.write(offset + 3, 0);
-  int str_size = EEPROM.read(offset + 4);
-    EEPROM.write(offset + 4, 0);
-
-  for (int i = 0;i <= str_size;i++) 
-  {
-    EEPROM.write(offset + 5 + i, 0);
-  }
-  // Finaly remove the byte that indicate a save is present
-  EEPROM.write(0, 0);
+void eraseProgress() {  
+  saveProgress("", 0, 0, true);
 }
 
 boolean savePresent() {
-  if (EEPROM.read(0) > 0) {
-    return true;
-  } 
-  else {
-    return false;
-  }  
+  return (EEPROM.read(0) > 0);
 }
 
-unsigned long getSavedTime(unsigned int offset=1) {
+unsigned long getSavedTime() {
   unsigned int time;
-  time = word(EEPROM.read(offset), EEPROM.read(offset + 1));
+  time = word(EEPROM.read(1), EEPROM.read(2));
   return time * 1000UL;
 }
 
-unsigned int getSavedDistance(unsigned int offset=1) {
-  return word(EEPROM.read(offset + 2), EEPROM.read(offset + 3));
+unsigned int getSavedDistance() {
+  return word(EEPROM.read(3), EEPROM.read(4));
 }
 
-String getSavedStartTimeStr(unsigned int offset=1) {
-  int str_size = EEPROM.read(offset + 4);
-  String str_time;
-  for (int i = 0;i <= str_size;i++) 
+String getSavedStartTimeStr() {
+  int str_size = EEPROM.read(5);
+  String str_time = "";
+  for (int i = 0;i < str_size;i++) 
   {
-    str_time += char(EEPROM.read(offset + 5 + i));
+    str_time += char(EEPROM.read(6 + i));
   }
   return str_time;
 }

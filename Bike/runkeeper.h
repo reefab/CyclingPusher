@@ -6,9 +6,6 @@
  *      Author: reefab
  */
 
-#include <Arduino.h>
-#include <HTTPClient.h>
-
 byte serverIp[] = {
   74,50,63,142};
 #define apiServer "api.runkeeper.com"

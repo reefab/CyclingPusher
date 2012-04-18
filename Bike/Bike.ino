@@ -34,7 +34,7 @@ EthernetClient client;
 #include "config.h"
 #include "runkeeper.h"
 #include "ntp.h"
-//#include "persistent.h"
+#include "persistent.h"
 
 // This needs to be pin 2 to use interrupt 0
 #define reedPin 2
@@ -56,6 +56,8 @@ EthernetClient client;
 #define maxTime 120
 // Change the data displayed on the second line of the lcd every X seconds
 #define changeSecondLine 5
+// Save session data every X seconds
+#define saveInterval 60
 
 // Global Vars
 unsigned int nbRotation = 0;
@@ -68,6 +70,7 @@ unsigned long enterLoop = 0;
 unsigned long exitLoop = 0;
 unsigned long time_elasped = 0;
 unsigned long effectiveTime = 0;
+unsigned long lastSave = 0;
 volatile boolean backlight = false;
 volatile boolean paused = false;
 volatile boolean resetRequested = false;
@@ -85,16 +88,15 @@ boolean uploaded = false;
 // Messages
 #define msg_start "  Starting up."
 #define msg_ipget "Getting IP..."
-#define msg_ethfail1 "Failed to configure"
-#define msg_ethfail2 "Ethernet using DHCP"
+#define msg_ethfail "Eth Failure"
 #define msg_savedact1 "Prev. act. found"
 #define msg_savedact2 "Updlng prv. act."
 
-int freeRam () {
-  extern int __heap_start, *__brkval; 
-  int v; 
-  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval); 
-}
+//int freeRam () {
+//  extern int __heap_start, *__brkval; 
+//  int v; 
+//  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval); 
+//}
 
 void setup() {
   Serial.begin(9600);
@@ -111,30 +113,38 @@ void setup() {
   // start Ethernet
   if (Ethernet.begin(mac) == 0) {
     lcd.clear();
-    lcd.print(msg_ethfail1);
-    lcd.setCursor(0, 1);
-    lcd.print(msg_ethfail2);
-    delay(50000);
+    lcd.print(msg_ethfail);
+    delay(50000000);
   }
   else {
     setStartTime();
-    //startTimeStr = getTimeString();
-    displayInitScreen();
+    delay(1000);
+    // Retry if unable to get time from NTP
+    if (year() == 1970) {
+      while(year() == 1970){
+        delay(10000);
+        lcd.clear();
+        lcd.print("Retrying ...");
+        setStartTime();
+      }
+    }
+    //displayInitScreen();
   }
-//  if (savePresent()) {
-//      lcd.clear();
-//      lcd.print(msg_savedact1);
-//      lcd.setCursor(0, 1);
-//      lcd.print(msg_savedact2);
-//      Serial.print("Time: ");
-//      Serial.println(getSavedTime(), DEC);
-//      Serial.print("Distance: ");
-//      Serial.println(getSavedDistance(), DEC);
-//      Serial.print("Start Time: ");
-//      Serial.println(getSavedStartTimeStr());
-//      delay(1000);
-//      eraseProgress();
-//  }
+  // Upload saved session if present
+  if (savePresent()) {
+      lcd.clear();
+      lcd.print(msg_savedact1);
+      lcd.setCursor(0, 1);
+      lcd.print(msg_savedact2);
+      lcd.clear();
+      uploaded = uploadResult(getSavedStartTimeStr(), getSavedDistance(), getSavedTime());
+      if(uploaded) {
+        resetRequested=true;
+        eraseProgress();
+        lcd.print("Saved data uploaded");
+        delay(1000);
+      }
+  }
   lcd.clear();
   
   lastReedPress = millis();
@@ -172,13 +182,16 @@ void loop() {
     lcd.setCursor(0, 0);
     lcd.print(" Activity ended "); 
     delay(500);
-//    lcd.clear();
-//    saveProgress(startTimeStr, totalDistance, effectiveTime);
-//    lcd.print(" Activity saved "); 
-//    delay(500);
+    lcd.clear();
+    saveProgress(startTimeStr, totalDistance, effectiveTime);
+    lcd.print(" Activity saved "); 
+    delay(500);
     lcd.clear();
     uploaded = uploadResult(startTimeStr, totalDistance, effectiveTime);
-    if(uploaded) resetRequested=true;
+    if(uploaded) {
+      resetRequested=true;
+      eraseProgress(); 
+    }
     delay(5000);
     switchBacklight(false);
   } 
@@ -186,7 +199,10 @@ void loop() {
     // Activity in progres
     // Start a new session if requested
     if (resetRequested) {
-      if (start) firstLine = "Activity started";
+      if (start) {
+        lcd.setCursor(0, 0);
+        lcd.print("Activity started");
+      }
       delay(250);
       reset(start);
       delay(250);
@@ -232,13 +248,18 @@ void loop() {
         delay(5000);
         switchBacklight(false);
         resetRequested = true;
+        eraseProgress();
       }
     }
-//    Serial.println("\n[free RAM]");
+    // Save session data regularly
+    if((millis() - lastSave) < ((unsigned long) 1000 * saveInterval)) {
+          saveProgress(startTimeStr, totalDistance, effectiveTime);
+          lastSave = millis();
+    }
+    
+    //Serial.println("\n[free RAM]");
     //Serial.println(freeRam());
-    //Serial.println(getTimeString());
-    Serial.println(rotationCount);
-
+    
     displayInfo();
   }
 }
