@@ -26,6 +26,7 @@
 #include <EthernetUdp.h>
 #include <Time.h>
 #include <HTTPClient.h>
+#include <EEPROM.h>
 
 LiquidCrystal lcd(4, 5, 6, 7, 8, 9);
 EthernetClient client;
@@ -33,6 +34,7 @@ EthernetClient client;
 #include "config.h"
 #include "runkeeper.h"
 #include "ntp.h"
+//#include "persistent.h"
 
 // This needs to be pin 2 to use interrupt 0
 #define reedPin 2
@@ -80,6 +82,14 @@ boolean uploaded = false;
 
 #include "display.h"
 
+// Messages
+#define msg_start "  Starting up."
+#define msg_ipget "Getting IP..."
+#define msg_ethfail1 "Failed to configure"
+#define msg_ethfail2 "Ethernet using DHCP"
+#define msg_savedact1 "Prev. act. found"
+#define msg_savedact2 "Updlng prv. act."
+
 int freeRam () {
   extern int __heap_start, *__brkval; 
   int v; 
@@ -87,37 +97,52 @@ int freeRam () {
 }
 
 void setup() {
+  Serial.begin(9600);
+  
   pinMode(reedPin, INPUT);
   pinMode(ledblPin, OUTPUT);
 
   // LCD Init 
   lcd.begin(16, 2);
   switchBacklight(true);
-  lcd.print("  Starting up.  ");
+  lcd.print(msg_start);
   lcd.setCursor(0, 1);
-  lcd.print("Getting IP...");
-
-  // Reed switch handling by interrupt
-  attachInterrupt(0, turnCounter, RISING);
-
+  lcd.print(msg_ipget);
   // start Ethernet
   if (Ethernet.begin(mac) == 0) {
     lcd.clear();
-    lcd.print("Failed to configure");
+    lcd.print(msg_ethfail1);
     lcd.setCursor(0, 1);
-    lcd.print("Ethernet using DHCP");
+    lcd.print(msg_ethfail2);
     delay(5000);
   }
   else {
-    startTimeStr = setStartTime();
+    setStartTime();
+    startTimeStr = getTimeString();
     displayInitScreen();
     // So that the startTime will be reinitialized at the actual
     // start of the session
     startTimeStr = "";
   }
+//  if (savePresent()) {
+//      lcd.clear();
+//      lcd.print(msg_savedact1);
+//      lcd.setCursor(0, 1);
+//      lcd.print(msg_savedact2);
+//      Serial.print("Time: ");
+//      Serial.println(getSavedTime(), DEC);
+//      Serial.print("Distance: ");
+//      Serial.println(getSavedDistance(), DEC);
+//      Serial.print("Start Time: ");
+//      Serial.println(getSavedStartTimeStr());
+//      delay(1000);
+//      eraseProgress();
+//  }
   lcd.clear();
+  
+  // Reed switch handling by interrupt
+  attachInterrupt(0, turnCounter, RISING);
   lastReedPress = millis();
-  Serial.begin(9600);
 }
 
 void reset(boolean startNew=false)
@@ -134,7 +159,7 @@ void reset(boolean startNew=false)
   startTime = 0;
   time_elasped = 0;
   effectiveTime = 0;
-  if (startNew) startTimeStr = setStartTime();
+  if (startNew) startTimeStr = getTimeString();
 }
 
 void loop() {
@@ -145,7 +170,11 @@ void loop() {
     if (!backlight) switchBacklight(true);   
     lcd.setCursor(0, 0);
     lcd.print(" Activity ended "); 
-    delay(1000);
+    delay(500);
+    lcd.clear();
+//    saveProgress(startTimeStr, totalDistance, effectiveTime);
+    lcd.print(" Activity saved "); 
+    delay(500);
     lcd.clear();
     uploaded = uploadResult(startTimeStr, totalDistance, effectiveTime);
     if(uploaded) resetRequested=true;
@@ -207,8 +236,8 @@ void loop() {
         resetRequested = true;
       }
     }
-    Serial.println("\n[free RAM]");
-    Serial.println(freeRam());
+    //    Serial.println("\n[free RAM]");
+    //    Serial.println(freeRam());
 
     displayInfo();
   }
@@ -234,6 +263,7 @@ boolean isSessionValid()
 {
   return ((totalDistance > (unsigned int) minDistance) && (effectiveTime > ((unsigned long) minTime * 1000)));
 }
+
 
 
 

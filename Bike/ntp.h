@@ -13,7 +13,7 @@ const unsigned int localPort = 8888;      // local port to listen for UDP packet
 const int NTP_PACKET_SIZE= 48; // NTP time stamp is in the first 48 bytes of the message
 byte packetBuffer[ NTP_PACKET_SIZE]; //buffer to hold incoming and outgoing packets 
 // For NTP init
-IPAddress timeServer(192, 43, 244, 18); // time.nist.gov NTP server
+IPAddress timeServer(129, 6, 15, 28); // time.nist.gov NTP server
 // A UDP instance to let us send and receive packets over UDP
 EthernetUDP Udp;
 
@@ -44,7 +44,7 @@ unsigned long sendNTPpacket(IPAddress& address)
 unsigned long getTimeStamp() {
   sendNTPpacket(timeServer); // send an NTP packet to a time server
   // wait to see if a reply is available
-  delay(1000);  
+  delay(1500);  
   if ( Udp.parsePacket() ) {  
     // We've received a packet, read the data from it
     Udp.read(packetBuffer,NTP_PACKET_SIZE);  // read the packet into the buffer
@@ -73,16 +73,16 @@ String prettyDigits(int digits){
 }
 
 String elaspedTime(unsigned long time){  
- time = time / 1000UL;
- int hours = numberOfHours(time);
- int minutes = numberOfMinutes(time);
- int seconds = numberOfSeconds(time);
+  time = time / 1000UL;
+  int hours = numberOfHours(time);
+  int minutes = numberOfMinutes(time);
+  int seconds = numberOfSeconds(time);
 
   String timeStr = " ";
   // digital clock display
   timeStr = String(hours)
-  + prettyDigits(minutes) 
-  + prettyDigits(seconds);
+    + prettyDigits(minutes) 
+      + prettyDigits(seconds);
   return timeStr;
 }
 
@@ -96,12 +96,12 @@ String getTimeString() {
       + String(hour())
       + prettyDigits(minute())
         + prettyDigits(second());
-  return str_time; 
+  return str_time;
 }
 
 String setStartTime() {
   Udp.begin(localPort);
   setTime(getTimeStamp());
-  return getTimeString();
 }
+
 
