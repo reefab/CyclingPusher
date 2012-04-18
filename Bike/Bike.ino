@@ -26,6 +26,7 @@
 #include <EthernetUdp.h>
 #include <Time.h>
 #include <HTTPClient.h>
+#include <EEPROM.h>
 
 LiquidCrystal lcd(4, 5, 6, 7, 8, 9);
 EthernetClient client;
@@ -33,6 +34,7 @@ EthernetClient client;
 #include "config.h"
 #include "runkeeper.h"
 #include "ntp.h"
+#include "persistent.h"
 
 // This needs to be pin 2 to use interrupt 0
 #define reedPin 2
@@ -45,15 +47,17 @@ EthernetClient client;
 // Timeout in seconds, if the reed switch is not activated during this time, pause everything 
 #define timeOut 15
 // Time in seconds before the backlight of the LCD is switched off if there is no activity
-#define displaySleep 120
+#define displaySleep 60
 // Minimum distance for a valid activity (in meters)
 #define minDistance 500
 // least amount of effective time for a valid activity (in secs)
 #define minTime 60
 // Amount of inactive time before either automatic upload or discarding of current session
-#define maxTime 300
+#define maxTime 120
 // Change the data displayed on the second line of the lcd every X seconds
 #define changeSecondLine 5
+// Save session data every X seconds
+#define saveInterval 60
 
 // Global Vars
 unsigned int nbRotation = 0;
@@ -66,6 +70,7 @@ unsigned long enterLoop = 0;
 unsigned long exitLoop = 0;
 unsigned long time_elasped = 0;
 unsigned long effectiveTime = 0;
+unsigned long lastSave = 0;
 volatile boolean backlight = false;
 volatile boolean paused = false;
 volatile boolean resetRequested = false;
@@ -80,44 +85,72 @@ boolean uploaded = false;
 
 #include "display.h"
 
-int freeRam () {
-  extern int __heap_start, *__brkval; 
-  int v; 
-  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval); 
-}
+// Messages
+#define msg_start "  Starting up."
+#define msg_ipget "Getting IP..."
+#define msg_ethfail "Eth Failure"
+#define msg_savedact1 "Prev. act. found"
+#define msg_savedact2 "Updlng prv. act."
+
+//int freeRam () {
+//  extern int __heap_start, *__brkval; 
+//  int v; 
+//  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval); 
+//}
 
 void setup() {
+  Serial.begin(9600);
+  
   pinMode(reedPin, INPUT);
   pinMode(ledblPin, OUTPUT);
 
   // LCD Init 
   lcd.begin(16, 2);
   switchBacklight(true);
-  lcd.print("  Starting up.  ");
+  lcd.print(msg_start);
   lcd.setCursor(0, 1);
-  lcd.print("Getting IP...");
-
-  // Reed switch handling by interrupt
-  attachInterrupt(0, turnCounter, RISING);
-
+  lcd.print(msg_ipget);
   // start Ethernet
   if (Ethernet.begin(mac) == 0) {
     lcd.clear();
-    lcd.print("Failed to configure");
-    lcd.setCursor(0, 1);
-    lcd.print("Ethernet using DHCP");
-    delay(5000);
+    lcd.print(msg_ethfail);
+    delay(50000000);
   }
   else {
-    startTimeStr = setStartTime();
-    displayInitScreen();
-    // So that the startTime will be reinitialized at the actual
-    // start of the session
-    startTimeStr = "";
+    setStartTime();
+    delay(1000);
+    // Retry if unable to get time from NTP
+    if (year() == 1970) {
+      while(year() == 1970){
+        delay(10000);
+        lcd.clear();
+        lcd.print("Retrying ...");
+        setStartTime();
+      }
+    }
+    //displayInitScreen();
+  }
+  // Upload saved session if present
+  if (savePresent()) {
+      lcd.clear();
+      lcd.print(msg_savedact1);
+      lcd.setCursor(0, 1);
+      lcd.print(msg_savedact2);
+      lcd.clear();
+      uploaded = uploadResult(getSavedStartTimeStr(), getSavedDistance(), getSavedTime());
+      if(uploaded) {
+        resetRequested=true;
+        eraseProgress();
+        lcd.print("Saved data uploaded");
+        delay(1000);
+      }
   }
   lcd.clear();
+  
   lastReedPress = millis();
-  Serial.begin(9600);
+  // Reed switch handling by interrupt
+  attachInterrupt(0, turnCounter, RISING);
+
 }
 
 void reset(boolean startNew=false)
@@ -134,7 +167,10 @@ void reset(boolean startNew=false)
   startTime = 0;
   time_elasped = 0;
   effectiveTime = 0;
-  if (startNew) startTimeStr = setStartTime();
+  if (startNew) {
+    startTimeStr = getTimeString();
+    start = false;
+  }
 }
 
 void loop() {
@@ -145,10 +181,17 @@ void loop() {
     if (!backlight) switchBacklight(true);   
     lcd.setCursor(0, 0);
     lcd.print(" Activity ended "); 
-    delay(1000);
+    delay(500);
+    lcd.clear();
+    saveProgress(startTimeStr, totalDistance, effectiveTime);
+    lcd.print(" Activity saved "); 
+    delay(500);
     lcd.clear();
     uploaded = uploadResult(startTimeStr, totalDistance, effectiveTime);
-    if(uploaded) resetRequested=true;
+    if(uploaded) {
+      resetRequested=true;
+      eraseProgress(); 
+    }
     delay(5000);
     switchBacklight(false);
   } 
@@ -156,14 +199,14 @@ void loop() {
     // Activity in progres
     // Start a new session if requested
     if (resetRequested) {
-      reset(start);
-      resetRequested = false;
       if (start) {
         lcd.setCursor(0, 0);
         lcd.print("Activity started");
-        start = false;
-        delay(1000);
       }
+      delay(250);
+      reset(start);
+      delay(250);
+      resetRequested = false;
     }
     // Update turns and distance
     nbRotation = rotationCount - updateCount;
@@ -205,11 +248,18 @@ void loop() {
         delay(5000);
         switchBacklight(false);
         resetRequested = true;
+        eraseProgress();
       }
     }
-    Serial.println("\n[free RAM]");
-    Serial.println(freeRam());
-
+    // Save session data regularly
+    if(isSessionValid() && ((millis() - lastSave) > ((unsigned long) 1000 * saveInterval))) {
+          saveProgress(startTimeStr, totalDistance, effectiveTime);
+          lastSave = millis();
+    }
+    
+    //Serial.println("\n[free RAM]");
+    //Serial.println(freeRam());
+    
     displayInfo();
   }
 }
@@ -234,6 +284,7 @@ boolean isSessionValid()
 {
   return ((totalDistance > (unsigned int) minDistance) && (effectiveTime > ((unsigned long) minTime * 1000)));
 }
+
 
 
 
