@@ -35,7 +35,7 @@ boolean uploadResult(String startTimeStr, unsigned int totalDistance, unsigned l
     data += json_str2;
     data += totalDistance;
     data += json_str3;
-    data += (int) (effectiveTime / 1000);
+    data += (int) (effectiveTime / 1000UL);
     data += "}";
     unsigned int bufSize = data.length() +1;
     char apiData[bufSize];
