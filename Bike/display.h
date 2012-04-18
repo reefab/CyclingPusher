@@ -109,6 +109,7 @@ void displayInfo() {
 }
 
 void displayInitScreen() {
+  String startTimeStr = getTimeString();
   lcd.clear();
   lcd.print("IP: ");
   lcd.print(Ethernet.localIP());

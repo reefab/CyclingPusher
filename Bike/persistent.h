@@ -1,4 +1,4 @@
-#include <EEPROM.h>
+//#include <EEPROM.h>
 
 void saveProgress(String startTimeStr, unsigned int totalDistance, unsigned long effectiveTime, unsigned int offset=1) {
 

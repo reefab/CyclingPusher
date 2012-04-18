@@ -99,7 +99,7 @@ String getTimeString() {
   return str_time;
 }
 
-String setStartTime() {
+void setStartTime() {
   Udp.begin(localPort);
   setTime(getTimeStamp());
 }
