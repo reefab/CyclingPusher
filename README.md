@@ -19,16 +19,20 @@ If the pause last more than 5 minutes, it'll upload to Runkeeper the:
  * Total Distance
  * Elapsed Time
 
-for the current session.
+for the current session. From this, Runkeeper computes the average speed, pace and
+total calories burned.
 
 ## Usage
 
 Plug the ethernet cable and the USB/Power cable in.
-The Arduino will display its IP address and the current UTC time that it obtained via NTP.
+The Arduino will beep once it has obtained the current time and is ready for
+use.
 
 Pedal away and it'll display the current speed while cycling between the total distance. average speed and elapsed time.
 
 Stop pedaling for ~ 15 seconds and the pause screen will come up. 60 seconds, the lcd's backlight will be switched off. 5 minutes and it'll end the session and upload the result or discard the session if the "valid activity" threshold hasn't been reached.
+
+It'll beep every 5km by default.
 
 To start a new session, just use the bike again, it'll start over.
 
