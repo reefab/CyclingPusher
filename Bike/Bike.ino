@@ -58,11 +58,15 @@ EthernetClient client;
 #define changeSecondLine 5
 // Save session data every X seconds
 #define saveInterval 60
+// Beep shortly every X meters
+#define beepInterval 5000
 
 // Global Vars
 unsigned int nbRotation = 0;
 unsigned int updateCount = 0;
 unsigned int totalDistance = 0;
+unsigned int lastBeep = 0;
+unsigned int beepCount = 0;
 unsigned long lastUpdate = 0;
 unsigned long currentTime = 0;
 unsigned long startTime = 0;
@@ -87,7 +91,7 @@ boolean uploaded = false;
 
 // Messages
 #define msg_start "  Starting up."
-#define msg_ipget "Getting IP..."
+#define msg_timeget "Getting Time..."
 #define msg_ethfail "Eth Failure"
 #define msg_savedact1 "Prev. act. found"
 #define msg_savedact2 "Updlng prv. act."
@@ -103,40 +107,37 @@ void setup() {
   
   pinMode(reedPin, INPUT);
   pinMode(ledblPin, OUTPUT);
+  // Beeper
+  pinMode(A0, OUTPUT);
+  digitalWrite(A0, HIGH);
 
   // LCD Init 
   lcd.begin(16, 2);
   switchBacklight(true);
   lcd.print(msg_start);
   lcd.setCursor(0, 1);
-  lcd.print(msg_ipget);
   // start Ethernet
-  if (Ethernet.begin(mac) == 0) {
-    lcd.clear();
-    lcd.print(msg_ethfail);
-    delay(50000000);
-  }
-  else {
-    setStartTime();
-    delay(1000);
-    // Retry if unable to get time from NTP
-    if (year() == 1970) {
-      while(year() == 1970){
-        delay(10000);
-        lcd.clear();
-        lcd.print("Retrying ...");
-        setStartTime();
-      }
+  Ethernet.begin(mac, ip);
+  lcd.print(msg_timeget);
+  setStartTime();
+  delay(1000);
+  // Retry if unable to get time from NTP
+  if (year() == 1970) {
+    while(year() == 1970){
+      delay(10000);
+      lcd.clear();
+      lcd.print("Retrying ...");
+      setStartTime();
     }
-    //displayInitScreen();
   }
-  // Upload saved session if present
+    // Upload saved session if present
   if (savePresent()) {
       lcd.clear();
       lcd.print(msg_savedact1);
       lcd.setCursor(0, 1);
       lcd.print(msg_savedact2);
       lcd.clear();
+      delay(1000);
       uploaded = uploadResult(getSavedStartTimeStr(), getSavedDistance(), getSavedTime());
       if(uploaded) {
         resetRequested=true;
@@ -202,6 +203,7 @@ void loop() {
       if (start) {
         lcd.setCursor(0, 0);
         lcd.print("Activity started");
+        delay(5000);
       }
       delay(250);
       reset(start);
@@ -255,6 +257,11 @@ void loop() {
     if(isSessionValid() && ((millis() - lastSave) > ((unsigned long) 1000 * saveInterval))) {
           saveProgress(startTimeStr, totalDistance, effectiveTime);
           lastSave = millis();
+    }
+    // Beep if needed
+    if(totalDistance >= (beepCount * beepInterval)) {
+      beepCount++;
+      tone(A0, 2349, 250);
     }
     
     //Serial.println("\n[free RAM]");

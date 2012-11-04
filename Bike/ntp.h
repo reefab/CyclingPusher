@@ -3,7 +3,8 @@ const unsigned int localPort = 8888;      // local port to listen for UDP packet
 const int NTP_PACKET_SIZE= 48; // NTP time stamp is in the first 48 bytes of the message
 byte packetBuffer[ NTP_PACKET_SIZE]; //buffer to hold incoming and outgoing packets 
 // For NTP init
-IPAddress timeServer(129, 6, 15, 28); // time.nist.gov NTP server
+//IPAddress timeServer(129, 6, 15, 28); // time.nist.gov NTP server
+IPAddress timeServer(192, 168, 1, 150); // Or a local server
 // A UDP instance to let us send and receive packets over UDP
 EthernetUDP Udp;
 
