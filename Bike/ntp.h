@@ -53,7 +53,6 @@ unsigned long getTimeStamp() {
   }    
 }
 
-
 String prettyDigits(int digits){
   // utility function for digital clock display: prints preceding colon and leading 0
   String output = ":";

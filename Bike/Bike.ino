@@ -122,13 +122,11 @@ void setup() {
   setStartTime();
   delay(1000);
   // Retry if unable to get time from NTP
-  if (year() == 1970) {
-    while(year() == 1970){
-      delay(10000);
-      lcd.clear();
-      lcd.print("Retrying ...");
-      setStartTime();
-    }
+  while(year() == 1970 or getTimeString().length() <= 10){
+    delay(50000);
+    lcd.clear();
+    lcd.print("Retrying ...");
+    setStartTime();
   }
     // Upload saved session if present
   if (savePresent()) {
@@ -172,6 +170,7 @@ void reset(boolean startNew=false)
     startTimeStr = getTimeString();
     start = false;
   }
+  paused = false;
 }
 
 void loop() {
@@ -203,7 +202,6 @@ void loop() {
       if (start) {
         lcd.setCursor(0, 0);
         lcd.print("Activity started");
-        delay(5000);
       }
       delay(250);
       reset(start);
