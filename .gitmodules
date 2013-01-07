@@ -1,0 +1,3 @@
+[submodule "lib/HTTPClient"]
+	path = lib/HTTPClient
+	url = git://github.com/interactive-matter/HTTPClient.git
