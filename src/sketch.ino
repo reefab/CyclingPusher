@@ -1,7 +1,7 @@
 
 /*
  * Bike
- * 
+ *
  *  https://github.com/reefab/CyclingPusher
  *
  *  CyclingPusher is free software: you can redistribute it and/or modify
@@ -21,11 +21,11 @@
  */
 
 #include <LiquidCrystal.h>
-#include <SPI.h>         
+#include <SPI.h>
 #include <Ethernet.h>
 #include <EthernetUdp.h>
 #include <Time.h>
-#include <HTTPClient.h>
+#include <IPAddress.h>
 #include <EEPROM.h>
 
 LiquidCrystal lcd(4, 5, 6, 7, 8, 9);
@@ -40,11 +40,11 @@ EthernetClient client;
 #define reedPin 2
 // Led backlight
 #define ledblPin 3
-// Number of 'wheel' turns needed to recalculate speed/total distance 
+// Number of 'wheel' turns needed to recalculate speed/total distance
 #define interval 5
 // Minimal number of millisecond between reed switch changes to prevent bounce
 #define reedRes 50
-// Timeout in seconds, if the reed switch is not activated during this time, pause everything 
+// Timeout in seconds, if the reed switch is not activated during this time, pause everything
 #define timeOut 15
 // Time in seconds before the backlight of the LCD is switched off if there is no activity
 #define displaySleep 60
@@ -97,21 +97,21 @@ boolean uploaded = false;
 #define msg_savedact2 "Updlng prv. act."
 
 //int freeRam () {
-//  extern int __heap_start, *__brkval; 
-//  int v; 
-//  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval); 
+//  extern int __heap_start, *__brkval;
+//  int v;
+//  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
 //}
 
 void setup() {
   Serial.begin(9600);
-  
+
   pinMode(reedPin, INPUT);
   pinMode(ledblPin, OUTPUT);
   // Beeper
   pinMode(A0, OUTPUT);
   digitalWrite(A0, HIGH);
 
-  // LCD Init 
+  // LCD Init
   lcd.begin(16, 2);
   switchBacklight(true);
   lcd.print(msg_start);
@@ -145,7 +145,7 @@ void setup() {
       }
   }
   lcd.clear();
-  
+
   lastReedPress = millis();
   // Reed switch handling by interrupt
   attachInterrupt(0, turnCounter, RISING);
@@ -178,24 +178,23 @@ void loop() {
   delay(450);
   // Activity finished & api push
   if (done == true && !client.connected() && !uploaded) {
-    if (!backlight) switchBacklight(true);   
+    if (!backlight) switchBacklight(true);
     lcd.setCursor(0, 0);
-    lcd.print(" Activity ended "); 
+    lcd.print(" Activity ended ");
     delay(500);
     lcd.clear();
     saveProgress(startTimeStr, totalDistance, effectiveTime);
-    lcd.print(" Activity saved "); 
+    lcd.print(" Activity saved ");
     delay(500);
     lcd.clear();
     uploaded = uploadResult(startTimeStr, totalDistance, effectiveTime);
     if(uploaded) {
       resetRequested=true;
-      eraseProgress(); 
+      eraseProgress();
     }
     delay(5000);
     switchBacklight(false);
-  } 
-  else {
+  } else {
     // Activity in progres
     // Start a new session if requested
     if (resetRequested) {
@@ -215,7 +214,7 @@ void loop() {
       currentTime = millis();
       time_elasped = currentTime - lastUpdate;
       float distance = nbRotation * meterPerTurn;
-      currentSpeed = ((float) distance / (float) time_elasped) * 3600;  
+      currentSpeed = ((float) distance / (float) time_elasped) * 3600;
       totalDistance = rotationCount * meterPerTurn;
       updateCount = rotationCount;
       lastUpdate = currentTime;
@@ -225,8 +224,7 @@ void loop() {
     {
       exitLoop = millis();
       effectiveTime = effectiveTime + (exitLoop - enterLoop);
-    } 
-    else if((millis() - lastReedPress) < ((unsigned long) 1000 * maxTime)) {
+    } else if((millis() - lastReedPress) < ((unsigned long) 1000 * maxTime)) {
       // Automatic activity pause
       paused = true;
       currentSpeed = 0;
@@ -235,14 +233,12 @@ void loop() {
       {
         switchBacklight(false);
       }
-    }
-    else {
+    } else {
       // upload session if there is pertinent data, otherwise just reset
       if (isSessionValid()) {
         done = true;
-      } 
-      else if(rotationCount > 0) {
-        if (!backlight) switchBacklight(true);   
+      } else if(rotationCount > 0) {
+        if (!backlight) switchBacklight(true);
         lcd.clear();
         lcd.print("Discarding data.");
         delay(5000);
@@ -261,10 +257,10 @@ void loop() {
       beepCount++;
       tone(A0, 2349, 250);
     }
-    
+
     //Serial.println("\n[free RAM]");
     //Serial.println(freeRam());
-    
+
     displayInfo();
   }
 }
@@ -277,7 +273,7 @@ void turnCounter() {
       resetRequested = true;
       start = true;
     }
-    if (!backlight) switchBacklight(true);   
+    if (!backlight) switchBacklight(true);
     if (paused) paused = false;
 
     rotationCount++;
@@ -285,8 +281,7 @@ void turnCounter() {
   lastReedPress = millis();
 }
 
-boolean isSessionValid()
-{
+boolean isSessionValid() {
   return ((totalDistance > (unsigned int) minDistance) && (effectiveTime > ((unsigned long) minTime * 1000)));
 }
 

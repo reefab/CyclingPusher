@@ -16,14 +16,14 @@ void saveProgress(String startTimeStr, unsigned int totalDistance, unsigned long
   EEPROM.write(4, lowByte(totalDistance));
   EEPROM.write(5, str_size);
 
-  for (int i = 0;i < str_size;i++) 
+  for (int i = 0;i < str_size;i++)
   {
     EEPROM.write(6 + i, startTimeStr.charAt(i));
   }
 
 }
 
-void eraseProgress() {  
+void eraseProgress() {
   saveProgress("", 0, 0, true);
 }
 
@@ -44,11 +44,9 @@ unsigned int getSavedDistance() {
 String getSavedStartTimeStr() {
   int str_size = EEPROM.read(5);
   String str_time = "";
-  for (int i = 0;i < str_size;i++) 
+  for (int i = 0;i < str_size;i++)
   {
     str_time += char(EEPROM.read(6 + i));
   }
   return str_time;
 }
-
-

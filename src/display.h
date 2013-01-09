@@ -18,7 +18,7 @@ String floatToString(float float_val)
   char number[6];
   if ((int) float_val > 99) {
     return dtostrf(float_val, 5, 1, number);
-  } 
+  }
   else {
     return dtostrf(float_val, 5, 2, number);
   }
@@ -26,9 +26,9 @@ String floatToString(float float_val)
 
 String restrictIn16Chars(String line)
 {
-  if (line.length() > 16) { 
+  if (line.length() > 16) {
     return line.substring(0, 17);
-  } 
+  }
   else {
     return line;
   }
@@ -39,7 +39,7 @@ String getCurrentSpeedLine()
   String line = speed_str;
   line += floatToString(currentSpeed);
   line += kmh_str;
-  return line; 
+  return line;
 }
 
 String getDistanceLine()
@@ -48,7 +48,7 @@ String getDistanceLine()
   if (totalDistance < 1000) {
     line += totalDistance;
     line += "m       ";
-  } 
+  }
   else {
     line += floatToString((float) totalDistance / 1000U);
     line += "km      ";
@@ -59,11 +59,11 @@ String getDistanceLine()
 float getAverageSpeed() {
   if (effectiveTime == 0) {
     return 0;
-  } 
+  }
   else {
     return (float) ((float) totalDistance / effectiveTime) * 3600;
   }
-}  
+}
 
 String getTimeLine() {
   String time = time_str
@@ -82,7 +82,7 @@ String getAvgSpeedLine() {
 void displayInfo() {
   if (paused) {
     firstLine = pause_str;
-  } 
+  }
   else {
     firstLine = getCurrentSpeedLine();
   }
@@ -115,7 +115,7 @@ void displayInitScreen() {
   lcd.print(Ethernet.localIP());
   lcd.setCursor(0, 1);
   for (int i = 0;i < 16;i++) lcd.print(startTimeStr.charAt(i));
-  delay(2500); 
+  delay(2500);
   lcd.setCursor(0, 1);
   for (int i = 1;i < 32;i++) lcd.print(" ");
   lcd.setCursor(3, 1);
@@ -129,7 +129,7 @@ void switchBacklight(boolean bl)
   {
     digitalWrite(ledblPin, HIGH);
     backlight = true;
-  } 
+  }
   else {
     digitalWrite(ledblPin, LOW);
     backlight = false;
