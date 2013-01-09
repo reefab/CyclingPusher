@@ -6,57 +6,97 @@
  *      Author: reefab
  */
 
-byte serverIp[] = {74,50,63,142};
-#define apiServer "api.runkeeper.com"
-#define apiUri "/fitnessActivities"
-#define json_str1 "{\"type\": \"Cycling\",\"start_time\": \""
-#define json_str2 "\",\"total_distance\": "
-#define json_str3 ",\"duration\": "
-#define header_str1 "Authorization"
-#define header_str2 "Content-Type"
-#define header_str3 "application/vnd.com.runkeeper.NewFitnessActivity+json"
+IPAddress server(74,50,63,142);
 #define status_inprogress "Uploading result"
 #define status_failure "failed to connect"
 #define status_data_uploaded "Data uploaded"
 #define status_session_created "Session Created"
 #define status_error_code "ERROR: Server returned "
 
-HTTPClient http_client(apiServer, serverIp);
-
 boolean uploadResult(String startTimeStr, unsigned int totalDistance, unsigned long effectiveTime)
 {
-    String data;
-    data += json_str1;
-    data += startTimeStr;
-    data += json_str2;
-    data += totalDistance;
-    data += json_str3;
-    data += (int) (effectiveTime / 1000UL);
-    data += "}";
-    unsigned int bufSize = data.length() +1;
-    char apiData[bufSize];
-    data.toCharArray(apiData, bufSize);
+    String data = "{";
+    data +=
+        "\"type\": \"Cycling\","
+        "\"start_time\": \"" + startTimeStr + "\"," +
+        "\"total_distance\": " + totalDistance + "," +
+        "\"duration\":" +  (int) (effectiveTime / 1000UL) +
+    "}";
 
-    http_client_parameter apiHeaders[] = {
-        { header_str1, accessToken },
-        { header_str2, header_str3 },
-        { NULL, NULL }
-    };
+    Serial.print(data);
 
-    lcd.print(status_inprogress);
-    delay(500);
-    http_client.debug(-1);
-    FILE* result = http_client.postURI(apiUri, NULL, apiData, apiHeaders);
-    int returnCode = http_client.getLastReturnCode();
-    lcd.clear();
-
-    if (result != NULL) {
-        http_client.closeStream(result);  // this is very important -- be sure to close the STREAM
+    if (client.connect(server, 80)) {
+        lcd.print(status_inprogress);
+        client.println("POST /fitnessActivities HTTP/1.1");
+        client.println("HOST: api.runkeeper.com");
+        client.println("User-Agent: Arduino/1.0");
+        client.print("Authorization: ");
+        client.println(accessToken);
+        client.println("Content-Type: application/vnd.com.runkeeper.NewFitnessActivity+json");
+        client.print("Content-Length: ");
+        client.println(data.length());
+        client.println();
+        client.println(data);
+        delay(500);
+        lcd.clear();
     } else {
         lcd.print(status_failure);
+        delay(1000);
     }
 
-    if (returnCode == 201) {
+    delay(3000);
+
+    // Extract status code to see if POST was succesful
+    // Borrowed from https://github.com/interactive-matter/HTTPClient
+    const char* statusPrefix = "HTTP/*.* ";
+    const char* statusPtr = statusPrefix;
+    char c = '\0';
+    int statusCode = 0;
+    int iState = 0;
+    Serial.println();
+    while (client.available()) {
+      c = client.read();
+      Serial.print(c);
+      if (c != -1) {
+        switch(iState) {
+            case 0:
+                // We haven't reached the status code yet
+                if ( (*statusPtr == '*') || (*statusPtr == c) ) {
+                    // This character matches, just move along
+                    statusPtr++;
+                    if (*statusPtr == '\0'){
+                        // We've reached the end of the prefix
+                        iState = 1;
+                    }
+                } else {
+                    lcd.print(status_failure);
+                }
+                break;
+            case 1:
+                if (isdigit(c)) {
+                    // This assumes we won't get more than the 3 digits we
+                    // want
+                    statusCode = statusCode*10 + (c - '0');
+                } else {
+                    // We've reached the end of the status code
+                    // We could sanity check it here or double-check for ' '
+                    // rather than anything else, but let's be lenient
+                    iState = 2;
+                }
+                break;
+            case 2:
+                // We're just waiting for the end of the line now
+                break;
+            };
+        }
+    }
+    Serial.println();
+
+    if (!client.connected()) {
+        client.stop();
+    }
+
+    if (statusCode == 201) {
         lcd.print(status_data_uploaded);
         lcd.setCursor(0, 1);
         lcd.print(status_session_created);
@@ -64,8 +104,7 @@ boolean uploadResult(String startTimeStr, unsigned int totalDistance, unsigned l
     } else {
         lcd.print(status_error_code);
         lcd.setCursor(0, 1);
-        lcd.print(returnCode);
+        lcd.print(statusCode);
         return false;
     }
 }
-
