@@ -18,6 +18,7 @@ boolean uploadResult(String startTimeStr, unsigned int totalDistance, unsigned l
     String data = "{";
     data +=
         "\"type\": \"Cycling\","
+        "\"equipment\": \"Stationary Bike\","
         "\"start_time\": \"" + startTimeStr + "\"," +
         "\"total_distance\": " + totalDistance + "," +
         "\"duration\":" +  (int) (effectiveTime / 1000UL) +
