@@ -55,8 +55,6 @@ You'll need:
  * Arduino Uno + Ethernet shield or equivalent
  * 16x2 LCD
  * Stationary bike with a reed switch
- * [Time library](http://arduino.cc/playground/Code/Time)
- * [HTTPClient library](http://interactive-matter.eu/how-to/arduino-http-client-library/)
 
 The reed switch needs to be plugged in Pin2 to use the Arduino's hardware interrupts.
 
