@@ -46,7 +46,7 @@ char dayStr6[] PROGMEM = "Friday";
 char dayStr7[] PROGMEM = "Saturday";
 
 PGM_P dayNames_P[] PROGMEM = { dayStr0,dayStr1,dayStr2,dayStr3,dayStr4,dayStr5,dayStr6,dayStr7};
-char dayShortNames_P[] PROGMEM = "ErrSunMonTueWedThrFriSat";
+char dayShortNames_P[] PROGMEM = "ErrSunMonTueWedThuFriSat";
 
 /* functions to return date strings */
 
