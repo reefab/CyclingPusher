@@ -53,7 +53,7 @@ EthernetClient client;
 // least amount of effective time for a valid activity (in secs)
 #define minTime 60
 // Amount of inactive time before either automatic upload or discarding of current session
-#define maxTime 120
+#define maxTime 60
 // Change the data displayed on the second line of the lcd every X seconds
 #define changeSecondLine 5
 // Save session data every X seconds

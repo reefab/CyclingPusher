@@ -2,3 +2,5 @@
 config.h
 .build
 ino.ini
+tags
+*.gch
