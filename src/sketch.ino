@@ -20,7 +20,6 @@
  *      Author: reefab@demenzia.net
  */
 
-#include <LiquidCrystal.h>
 #include <SPI.h>
 #include <Ethernet.h>
 #include <EthernetUdp.h>
@@ -28,18 +27,14 @@
 #include <IPAddress.h>
 #include <EEPROM.h>
 
-LiquidCrystal lcd(4, 5, 6, 7, 8, 9);
 EthernetClient client;
 
 #include "config.h"
-#include "runkeeper.h"
 #include "ntp.h"
 #include "persistent.h"
 
 // This needs to be pin 2 to use interrupt 0
 #define reedPin 2
-// Led backlight
-#define ledblPin 3
 // Number of 'wheel' turns needed to recalculate speed/total distance
 #define interval 5
 // Minimal number of millisecond between reed switch changes to prevent bounce
@@ -55,9 +50,9 @@ EthernetClient client;
 // Amount of inactive time before either automatic upload or discarding of current session
 #define maxTime 120
 // Change the data displayed on the second line of the lcd every X seconds
-#define changeSecondLine 5
+#define changeSecondLine 3
 // Save session data every X seconds
-#define saveInterval 60
+#define saveInterval 120
 // Beep shortly every X meters
 #define beepInterval 5000
 
@@ -87,7 +82,13 @@ float currentSpeed = 0;
 boolean done = false;
 boolean uploaded = false;
 
+#include "Lcd.h"
+// LCD backlight
+#define lcdblPin 3
+Lcd Lcd(lcdblPin);
+
 #include "display.h"
+#include "runkeeper.h"
 
 // Messages
 #define msg_start "  Starting up."
@@ -106,50 +107,43 @@ void setup() {
   Serial.begin(9600);
 
   pinMode(reedPin, INPUT);
-  pinMode(ledblPin, OUTPUT);
-  // Beeper
-  pinMode(A0, OUTPUT);
-  digitalWrite(A0, HIGH);
 
-  // LCD Init
-  lcd.begin(16, 2);
-  switchBacklight(true);
-  lcd.print(msg_start);
-  lcd.setCursor(0, 1);
+  Lcd.setFirstLine(msg_start);
+
   // start Ethernet
   Ethernet.begin(mac, ip);
-  lcd.print(msg_timeget);
+  Lcd.setSecondLine(msg_timeget);
+  // get time
   setStartTime();
   delay(1000);
   // Retry if unable to get time from NTP
-  while(year() == 1970 or getTimeString().length() <= 10){
+  while(year() == 1970 or getTimeString().length() <= 10) {
     delay(50000);
-    lcd.clear();
-    lcd.print("Retrying ...");
+    Lcd.setFirstLine("Retrying ...");
     setStartTime();
   }
-    // Upload saved session if present
+  // Upload saved session if present
   if (savePresent()) {
-      lcd.clear();
-      lcd.print(msg_savedact1);
-      lcd.setCursor(0, 1);
-      lcd.print(msg_savedact2);
-      lcd.clear();
+      Lcd.setFirstLine(msg_savedact1);
+      Lcd.setSecondLine(msg_savedact2);
       delay(1000);
       uploaded = uploadResult(getSavedStartTimeStr(), getSavedDistance(), getSavedTime());
       if(uploaded) {
         resetRequested=true;
         eraseProgress();
-        lcd.print("Saved data uploaded");
+        Lcd.setFirstLine("Saved data uploaded");
         delay(1000);
       }
   }
-  lcd.clear();
+  Lcd.clear();
 
-  lastReedPress = millis();
   // Reed switch handling by interrupt
+  lastReedPress = millis();
   attachInterrupt(0, turnCounter, RISING);
 
+  // Beeper init
+  pinMode(A0, OUTPUT);
+  digitalWrite(A0, HIGH);
 }
 
 void reset(boolean startNew=false)
@@ -175,32 +169,27 @@ void reset(boolean startNew=false)
 
 void loop() {
   enterLoop = millis();
-  delay(450);
+  delay(100);
   // Activity finished & api push
   if (done == true && !client.connected() && !uploaded) {
-    if (!backlight) switchBacklight(true);
-    lcd.setCursor(0, 0);
-    lcd.print(" Activity ended ");
-    delay(500);
-    lcd.clear();
+    if (!backlight) Lcd.switchBacklight(true);
+    Lcd.setFirstLine(" Activity ended ");
     saveProgress(startTimeStr, totalDistance, effectiveTime);
-    lcd.print(" Activity saved ");
-    delay(500);
-    lcd.clear();
+    Lcd.setSecondLine(" Activity saved ");
+    // Try to upload the saved result
     uploaded = uploadResult(startTimeStr, totalDistance, effectiveTime);
     if(uploaded) {
       resetRequested=true;
       eraseProgress();
     }
     delay(5000);
-    switchBacklight(false);
+    Lcd.switchBacklight(false);
   } else {
     // Activity in progres
     // Start a new session if requested
     if (resetRequested) {
       if (start) {
-        lcd.setCursor(0, 0);
-        lcd.print("Activity started");
+        Lcd.setFirstLine("Activity started");
       }
       delay(250);
       reset(start);
@@ -231,18 +220,17 @@ void loop() {
       // Display sleep if needed
       if ((( (millis() - lastReedPress) > ((unsigned long) 1000 * displaySleep))) && backlight)
       {
-        switchBacklight(false);
+        Lcd.switchBacklight(false);
       }
     } else {
       // upload session if there is pertinent data, otherwise just reset
       if (isSessionValid()) {
         done = true;
       } else if(rotationCount > 0) {
-        if (!backlight) switchBacklight(true);
-        lcd.clear();
-        lcd.print("Discarding data.");
+        if (!backlight) Lcd.switchBacklight(true);
+        Lcd.setFirstLine("Discarding data.");
         delay(5000);
-        switchBacklight(false);
+        Lcd.switchBacklight(false);
         resetRequested = true;
         eraseProgress();
       }
@@ -273,7 +261,7 @@ void turnCounter() {
       resetRequested = true;
       start = true;
     }
-    if (!backlight) switchBacklight(true);
+    if (!backlight) Lcd.switchBacklight(true);
     if (paused) paused = false;
 
     rotationCount++;
@@ -284,7 +272,3 @@ void turnCounter() {
 boolean isSessionValid() {
   return ((totalDistance > (unsigned int) minDistance) && (effectiveTime > ((unsigned long) minTime * 1000)));
 }
-
-
-
-
