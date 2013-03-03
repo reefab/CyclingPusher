@@ -39,13 +39,11 @@ boolean uploadResult(String startTimeStr, unsigned int totalDistance, unsigned l
         client.println();
         client.println(data);
         delay(500);
-        lcd.clear();
     } else {
         lcd.print(status_failure);
         delay(1000);
     }
-
-    delay(3000);
+    lcd.clear();
 
     // Extract status code to see if POST was succesful
     // Borrowed from https://github.com/interactive-matter/HTTPClient
