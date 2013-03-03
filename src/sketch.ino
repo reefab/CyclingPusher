@@ -82,9 +82,8 @@ float currentSpeed = 0;
 boolean done = false;
 boolean uploaded = false;
 
+#define lcdblPin 3 // LCD backlight
 #include "Lcd.h"
-// LCD backlight
-#define lcdblPin 3
 Lcd Lcd(lcdblPin);
 
 #include "display.h"
@@ -108,6 +107,8 @@ void setup() {
 
   pinMode(reedPin, INPUT);
 
+  pinMode(lcdblPin, OUTPUT);
+  Lcd.switchBacklight(true);
   Lcd.setFirstLine(msg_start);
 
   // start Ethernet

@@ -9,6 +9,8 @@ class Lcd
         Lcd(int blPin);
         void setFirstLine(String str);
         void setSecondLine(String str);
+        // void setFirstLine(__FlashStringHelper* str);
+        // void setSecondLine(__FlashStringHelper* str);
         void switchBacklight(boolean bl);
         void clear();
 
