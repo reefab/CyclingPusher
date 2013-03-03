@@ -7,8 +7,6 @@
 #define time_str "Time:  "
 #define kmh_str "km/h"
 
-String firstLine;
-String secondLine;
 unsigned long lastSecondLineChange = 0;
 int currentSecondLine = 0;
 float avgSpeed = 0;
@@ -20,15 +18,6 @@ String floatToString(float float_val)
         return dtostrf(float_val, 5, 1, number);
     } else {
         return dtostrf(float_val, 5, 2, number);
-    }
-}
-
-String restrictIn16Chars(String line)
-{
-    if (line.length() > 16) {
-        return line.substring(0, 17);
-    } else {
-        return line;
     }
 }
 
@@ -76,53 +65,24 @@ String getAvgSpeedLine() {
 
 void displayInfo() {
     if (paused) {
-        firstLine = pause_str;
+        Lcd.setFirstLine(pause_str);
     } else {
-        firstLine = getCurrentSpeedLine();
+        Lcd.setFirstLine(getCurrentSpeedLine());
     }
-    lcd.clear();
-    lcd.print(restrictIn16Chars(firstLine));
     if ( (millis() - lastSecondLineChange) > ((unsigned long) changeSecondLine * 1000UL)) {
         currentSecondLine = (currentSecondLine + 1) % numberOfSecondLine;
         lastSecondLineChange = millis();
         avgSpeed = getAverageSpeed();
     }
-    lcd.setCursor(0, 1);
     switch (currentSecondLine) {
         case 0:
-            secondLine = getDistanceLine();
+            Lcd.setSecondLine(getDistanceLine());
             break;
         case 1:
-            secondLine = getAvgSpeedLine();
+            Lcd.setSecondLine(getAvgSpeedLine());
             break;
         case 2:
-            secondLine = getTimeLine();
+            Lcd.setSecondLine(getTimeLine());
             break;
-    }
-    lcd.print(restrictIn16Chars(secondLine));
-}
-
-// void displayInitScreen() {
-//     String startTimeStr = getTimeString();
-//     lcd.clear();
-//     lcd.print("IP: ");
-//     lcd.print(Ethernet.localIP());
-//     lcd.setCursor(0, 1);
-//     for (int i = 0;i < 16;i++) lcd.print(startTimeStr.charAt(i));
-//     delay(2500);
-//     lcd.setCursor(0, 1);
-//     for (int i = 1;i < 32;i++) lcd.print(" ");
-//     lcd.setCursor(3, 1);
-//     for (int i = 16;i < startTimeStr.length();i++) lcd.print(startTimeStr.charAt(i));
-//     delay(2500);
-// }
-
-void switchBacklight(boolean bl) {
-    if (bl) {
-        digitalWrite(ledblPin, HIGH);
-        backlight = true;
-    } else {
-        digitalWrite(ledblPin, LOW);
-        backlight = false;
     }
 }

@@ -27,7 +27,7 @@ boolean uploadResult(String startTimeStr, unsigned int totalDistance, unsigned l
     Serial.print(data);
 
     if (client.connect(server, 80)) {
-        lcd.print(status_inprogress);
+        Lcd.setFirstLine(status_inprogress);
         client.println("POST /fitnessActivities HTTP/1.1");
         client.println("HOST: api.runkeeper.com");
         client.println("User-Agent: Arduino/1.0");
@@ -40,10 +40,10 @@ boolean uploadResult(String startTimeStr, unsigned int totalDistance, unsigned l
         client.println(data);
         delay(500);
     } else {
-        lcd.print(status_failure);
+        Lcd.setFirstLine(status_failure);
         delay(1000);
     }
-    lcd.clear();
+    Lcd.clear();
 
     // Extract status code to see if POST was succesful
     // Borrowed from https://github.com/interactive-matter/HTTPClient
@@ -68,7 +68,7 @@ boolean uploadResult(String startTimeStr, unsigned int totalDistance, unsigned l
                         iState = 1;
                     }
                 } else {
-                    lcd.print(status_failure);
+                    Lcd.setFirstLine(status_failure);
                 }
                 break;
             case 1:
@@ -96,14 +96,12 @@ boolean uploadResult(String startTimeStr, unsigned int totalDistance, unsigned l
     }
 
     if (statusCode == 201) {
-        lcd.print(status_data_uploaded);
-        lcd.setCursor(0, 1);
-        lcd.print(status_session_created);
+        Lcd.setFirstLine(status_data_uploaded);
+        Lcd.setSecondLine(status_session_created);
         return true;
     } else {
-        lcd.print(status_error_code);
-        lcd.setCursor(0, 1);
-        lcd.print(statusCode);
+        Lcd.setFirstLine(status_error_code);
+        Lcd.setSecondLine((String) statusCode);
         return false;
     }
 }
