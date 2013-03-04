@@ -83,8 +83,8 @@ boolean done = false;
 boolean uploaded = false;
 
 #define lcdblPin 3 // LCD backlight
-#include "Lcd.h"
-Lcd Lcd(lcdblPin);
+#include "lcdwrapper.h"
+LcdWrapper Lcd(4, 5, 6, 7, 8, 9, lcdblPin);
 
 #include "display.h"
 #include "runkeeper.h"
@@ -104,6 +104,7 @@ Lcd Lcd(lcdblPin);
 
 void setup() {
   Serial.begin(9600);
+  Lcd.begin();
 
   pinMode(reedPin, INPUT);
 
