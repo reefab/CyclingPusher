@@ -2,6 +2,7 @@
 #include "lcdwrapper.h"
 
 LcdWrapper::LcdWrapper(int LCDRS, int LCDE, int LCDD4, int LCDD5, int LCDD6, int LCDD7, int blPin) {
+  displayUntil = 0;
   _blPin = blPin;
   _LCDRS = LCDRS;
   _LCDE = LCDE;
@@ -24,16 +25,40 @@ void LcdWrapper::clear() {
 }
 
 void LcdWrapper::setFirstLine(String str) {
-    firstLine = restrictIn16Chars(str);
+    if (displayUntil < millis()) {
+        firstLine = restrictIn16Chars(str);
+        lcdlib->clear();
+        lcdlib->print(firstLine);
+    }
+}
+
+void LcdWrapper::message(String str, int delay, bool error) {
+    switchBacklight(true);
+    _message = restrictIn16Chars(str);
+    displayUntil = millis() + (unsigned long) delay;
     lcdlib->clear();
-    lcdlib->print(firstLine);
+    lcdlib->print(_message);
+    if (error) {
+        lcdlib->setCursor(0, 1);
+        lcdlib->print("****************");
+    }
+}
+
+void LcdWrapper::infoMessage(String str) {
+    message(str, 1000, false);
+}
+
+void LcdWrapper::errorMessage(String str) {
+    message(str, 1000, true);
 }
 
 void LcdWrapper::setSecondLine(String str) {
-    secondLine = restrictIn16Chars(str);
-    lcdlib->clear();
-    lcdlib->print(firstLine);
+    if (displayUntil < millis()) {
+        lcdlib->clear();
+        lcdlib->print(firstLine);
+    }
     lcdlib->setCursor(0, 1);
+    secondLine = restrictIn16Chars(str);
     lcdlib->print(secondLine);
 }
 

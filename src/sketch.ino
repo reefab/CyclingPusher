@@ -1,4 +1,3 @@
-
 /*
  * Bike
  *
@@ -70,7 +69,6 @@ unsigned long exitLoop = 0;
 unsigned long time_elasped = 0;
 unsigned long effectiveTime = 0;
 unsigned long lastSave = 0;
-volatile boolean backlight = false;
 volatile boolean paused = false;
 volatile boolean resetRequested = false;
 volatile boolean start = false;
@@ -89,19 +87,6 @@ LcdWrapper Lcd(4, 5, 6, 7, 8, 9, lcdblPin);
 #include "display.h"
 #include "runkeeper.h"
 
-// Messages
-#define msg_start "  Starting up."
-#define msg_timeget "Getting Time..."
-#define msg_ethfail "Eth Failure"
-#define msg_savedact1 "Prev. act. found"
-#define msg_savedact2 "Updlng prv. act."
-
-//int freeRam () {
-//  extern int __heap_start, *__brkval;
-//  int v;
-//  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
-//}
-
 void setup() {
   Serial.begin(9600);
   Lcd.begin();
@@ -110,30 +95,30 @@ void setup() {
 
   pinMode(lcdblPin, OUTPUT);
   Lcd.switchBacklight(true);
-  Lcd.setFirstLine(msg_start);
+  Lcd.infoMessage("  Starting up.");
 
   // start Ethernet
   Ethernet.begin(mac, ip);
-  Lcd.setSecondLine(msg_timeget);
+  Lcd.setSecondLine("Getting Time...");
   // get time
   setStartTime();
   delay(1000);
   // Retry if unable to get time from NTP
   while(year() == 1970 or getTimeString().length() <= 10) {
     delay(50000);
-    Lcd.setFirstLine("Retrying ...");
+    Lcd.errorMessage("Retrying ...");
     setStartTime();
   }
   // Upload saved session if present
   if (savePresent()) {
-      Lcd.setFirstLine(msg_savedact1);
-      Lcd.setSecondLine(msg_savedact2);
+      Lcd.infoMessage("Prev. act. found");
+      Lcd.setSecondLine("Uploading");
       delay(1000);
       uploaded = uploadResult(getSavedStartTimeStr(), getSavedDistance(), getSavedTime());
       if(uploaded) {
         resetRequested=true;
         eraseProgress();
-        Lcd.setFirstLine("Saved data uploaded");
+        Lcd.infoMessage("Saved data uploaded");
         delay(1000);
       }
   }
@@ -174,10 +159,11 @@ void loop() {
   delay(100);
   // Activity finished & api push
   if (done == true && !client.connected() && !uploaded) {
-    if (!backlight) Lcd.switchBacklight(true);
-    Lcd.setFirstLine(" Activity ended ");
+    Lcd.switchBacklight(true);
+    Lcd.infoMessage(" Activity ended ");
     saveProgress(startTimeStr, totalDistance, effectiveTime);
-    Lcd.setSecondLine(" Activity saved ");
+    delay(500);
+    Lcd.infoMessage(" Activity saved ");
     // Try to upload the saved result
     uploaded = uploadResult(startTimeStr, totalDistance, effectiveTime);
     if(uploaded) {
@@ -190,11 +176,11 @@ void loop() {
     // Activity in progres
     // Start a new session if requested
     if (resetRequested) {
-      if (start) {
-        Lcd.setFirstLine("Activity started");
-      }
       delay(250);
       reset(start);
+      if (start) {
+        Lcd.infoMessage("Activity started");
+      }
       delay(250);
       resetRequested = false;
     }
@@ -220,7 +206,7 @@ void loop() {
       paused = true;
       currentSpeed = 0;
       // Display sleep if needed
-      if ((( (millis() - lastReedPress) > ((unsigned long) 1000 * displaySleep))) && backlight)
+      if ((( (millis() - lastReedPress) > ((unsigned long) 1000 * displaySleep))))
       {
         Lcd.switchBacklight(false);
       }
@@ -229,10 +215,8 @@ void loop() {
       if (isSessionValid()) {
         done = true;
       } else if(rotationCount > 0) {
-        if (!backlight) Lcd.switchBacklight(true);
-        Lcd.setFirstLine("Discarding data.");
-        delay(5000);
-        Lcd.switchBacklight(false);
+        Lcd.errorMessage("Discarding data.");
+        delay(1000);
         resetRequested = true;
         eraseProgress();
       }
@@ -248,9 +232,6 @@ void loop() {
       tone(A0, 2349, 250);
     }
 
-    //Serial.println("\n[free RAM]");
-    //Serial.println(freeRam());
-
     displayInfo();
   }
 }
@@ -263,7 +244,7 @@ void turnCounter() {
       resetRequested = true;
       start = true;
     }
-    if (!backlight) Lcd.switchBacklight(true);
+    Lcd.switchBacklight(true);
     if (paused) paused = false;
 
     rotationCount++;

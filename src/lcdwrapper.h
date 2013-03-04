@@ -2,7 +2,7 @@
 #define lcdwrapper_h
 
 #include "Arduino.h"
-#include <LiquidCrystal.h>
+#include "LiquidCrystal.h"
 
 class LcdWrapper
 {
@@ -10,9 +10,9 @@ class LcdWrapper
         LcdWrapper(int LCDRS, int LCDE, int LCDD4, int LCDD5, int LCDD6, int LCDD7, int blPin);
         void begin();
         void setFirstLine(String str);
+        void infoMessage(String str);
+        void errorMessage(String str);
         void setSecondLine(String str);
-        // void setFirstLine(__FlashStringHelper* str);
-        // void setSecondLine(__FlashStringHelper* str);
         void switchBacklight(boolean bl);
         void clear();
 
@@ -25,9 +25,12 @@ class LcdWrapper
         int _LCDD6;
         int _LCDD7;
         int _blPin;
+        unsigned long displayUntil;
         String firstLine;
         String secondLine;
+        String _message;
         String restrictIn16Chars(String str);
+        void message(String str, int delay, bool error);
         volatile boolean backlight;
 };
 
