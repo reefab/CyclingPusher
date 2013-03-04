@@ -16,13 +16,17 @@ IPAddress server(74,50,63,142);
 boolean uploadResult(String startTimeStr, unsigned int totalDistance, unsigned long effectiveTime)
 {
     String data = "{";
-    data +=
-        "\"type\": \"Cycling\","
-        "\"equipment\": \"Stationary Bike\","
-        "\"start_time\": \"" + startTimeStr + "\"," +
-        "\"total_distance\": " + totalDistance + "," +
-        "\"duration\":" +  (int) (effectiveTime / 1000UL) +
-    "}";
+    data += "\"type\": \"Cycling\",";
+    data += "\"equipment\": \"Stationary Bike\",";
+    data += "\"start_time\": \"";
+    data += startTimeStr;
+    data += "\",";
+    data += "\"total_distance\": ";
+    data += totalDistance;
+    data += ",";
+    data += "\"duration\":";
+    data += (int) (effectiveTime / 1000UL);
+    data += "}";
 
     Serial.print(data);
 
