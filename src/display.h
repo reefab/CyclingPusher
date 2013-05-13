@@ -23,7 +23,9 @@ String floatToString(float float_val)
 
 String getCurrentSpeedLine()
 {
-    String line = String(speed_str);
+    String line;
+    line.reserve(16);
+    line += String(speed_str);
     line += floatToString(currentSpeed);
     line += kmh_str;
     return line;
@@ -31,7 +33,9 @@ String getCurrentSpeedLine()
 
 String getDistanceLine()
 {
-    String line = String(distance_str);
+    String line;
+    line.reserve(16);
+    line += String(distance_str);
     if (totalDistance < 1000) {
         line += totalDistance;
         line += "m       ";
@@ -51,13 +55,17 @@ float getAverageSpeed() {
 }
 
 String getTimeLine() {
-    String time = String(time_str + elaspedTime(effectiveTime));
+    String time;
+    time.reserve(16);
+    time += String(time_str + elaspedTime(effectiveTime));
     time += " ";
     return time;
 }
 
 String getAvgSpeedLine() {
-    String line = String("Avg:   ");
+    String line;
+    line.reserve(16);
+    line += String("Avg:   ");
     line += floatToString(avgSpeed);
     line += kmh_str;
     return line;

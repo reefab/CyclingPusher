@@ -37,7 +37,7 @@ EthernetClient client;
 // Number of 'wheel' turns needed to recalculate speed/total distance
 #define interval 5
 // Minimal number of millisecond between reed switch changes to prevent bounce
-#define reedRes 50
+#define reedRes 100
 // Timeout in seconds, if the reed switch is not activated during this time, pause everything
 #define timeOut 15
 // Time in seconds before the backlight of the LCD is switched off if there is no activity

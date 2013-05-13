@@ -15,7 +15,9 @@ IPAddress server(74,50,63,142);
 
 boolean uploadResult(String startTimeStr, unsigned int totalDistance, unsigned long effectiveTime)
 {
-    String data = "{";
+    String data;
+    data.reserve(128);
+    data += "{";
     data += "\"type\": \"Cycling\",";
     data += "\"equipment\": \"Stationary Bike\",";
     data += "\"start_time\": \"";
