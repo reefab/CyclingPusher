@@ -88,8 +88,9 @@ LcdWrapper Lcd(4, 5, 6, 7, 8, 9, lcdblPin);
 #include "runkeeper.h"
 
 void setup() {
+  delay( 50 );   // allow some time (50 ms) after powerup and sketch start, for the Wiznet W5100 Reset IC to release and come out of reset.
   Serial.begin(9600);
-  delay(1000);
+  delay(5000);
   Lcd.begin();
 
   pinMode(reedPin, INPUT);
@@ -100,6 +101,7 @@ void setup() {
 
   // start Ethernet
   Ethernet.begin(mac, ip, gateway, dns_server);
+  delay(5000);
   Lcd.setSecondLine("Getting Time...");
   // get time
   setStartTime();

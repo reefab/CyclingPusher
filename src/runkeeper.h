@@ -33,10 +33,10 @@ boolean uploadResult(String startTimeStr, unsigned int totalDistance, unsigned l
     data += "}";
 
     data.trim();
-    Serial.println(data);
 
     if (client.connect(server, 80)) {
         Lcd.infoMessage(status_inprogress);
+        Serial.println(F("connected"));
         client.println(F("POST /fitnessActivities HTTP/1.1"));
         client.println(F("Host: api.runkeeper.com"));
         client.println(F("Content-Type: application/vnd.com.runkeeper.NewFitnessActivity+json"));
@@ -109,10 +109,13 @@ boolean uploadResult(String startTimeStr, unsigned int totalDistance, unsigned l
     if (statusCode == 201) {
         Lcd.infoMessage(status_data_uploaded);
         Lcd.setSecondLine(status_session_created);
+        Serial.println(status_session_created);
         return true;
     } else {
         Lcd.errorMessage(status_error_code);
         Lcd.setSecondLine((String) statusCode);
+        Serial.print(F("Error code: "));
+        Serial.println((String) statusCode);
         return false;
     }
 }
