@@ -89,6 +89,7 @@ LcdWrapper Lcd(4, 5, 6, 7, 8, 9, lcdblPin);
 
 void setup() {
   Serial.begin(9600);
+  delay(1000);
   Lcd.begin();
 
   pinMode(reedPin, INPUT);
@@ -98,7 +99,7 @@ void setup() {
   Lcd.infoMessage("  Starting up.");
 
   // start Ethernet
-  Ethernet.begin(mac, ip);
+  Ethernet.begin(mac, ip, gateway, dns_server);
   Lcd.setSecondLine("Getting Time...");
   // get time
   setStartTime();
