@@ -48,10 +48,11 @@ boolean uploadResult(String startTimeStr, unsigned int totalDistance, unsigned l
         client.println();
         client.println(data);
         Serial.println(data);
-        delay(500);
+        delay(2000);
     } else {
         Serial.println(F("Conn. Failed"));
         Lcd.errorMessage(status_failure);
+        client.stop();
         delay(1000);
     }
     Lcd.clear();

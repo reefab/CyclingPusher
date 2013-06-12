@@ -82,7 +82,7 @@ boolean uploaded = false;
 
 #define lcdblPin 3 // LCD backlight
 #include "lcdwrapper.h"
-LcdWrapper Lcd(4, 5, 6, 7, 8, 9, lcdblPin);
+LcdWrapper Lcd(A1, 5, 6, 7, 8, 9, lcdblPin);
 
 #include "display.h"
 #include "runkeeper.h"
@@ -90,8 +90,16 @@ LcdWrapper Lcd(4, 5, 6, 7, 8, 9, lcdblPin);
 void setup() {
   delay( 50 );   // allow some time (50 ms) after powerup and sketch start, for the Wiznet W5100 Reset IC to release and come out of reset.
   Serial.begin(9600);
-  delay(5000);
+   while (!Serial) {
+    ; // wait for serial port to connect. Needed for Leonardo only
+  }
+  // Using A1 for LCD RS pin
+  pinMode(A1, OUTPUT);
   Lcd.begin();
+
+  // Disabling SD slot
+  pinMode(4, OUTPUT);
+  digitalWrite(4, HIGH);
 
   pinMode(reedPin, INPUT);
 
@@ -101,17 +109,11 @@ void setup() {
 
   // start Ethernet
   Ethernet.begin(mac, ip, gateway, dns_server);
-  delay(5000);
-  Lcd.setSecondLine("Getting Time...");
-  // get time
-  setStartTime();
   delay(1000);
-  // Retry if unable to get time from NTP
-  while(year() == 1970 or getTimeString().length() <= 10) {
-    delay(50000);
-    Lcd.errorMessage("Retrying ...");
-    setStartTime();
-  }
+  // while(!client) {
+  //     // Wait until ready
+  // }
+
   // Upload saved session if present
   if (savePresent()) {
       Lcd.infoMessage("Prev. act. found");
@@ -124,6 +126,18 @@ void setup() {
         Lcd.infoMessage("Saved data uploaded");
         delay(1000);
       }
+  }
+  Lcd.clear();
+
+  // get time
+  Lcd.setSecondLine("Getting Time...");
+  setStartTime();
+  delay(1000);
+  // Retry if unable to get time from NTP
+  while(year() == 1970 or getTimeString().length() <= 10) {
+    delay(50000);
+    Lcd.errorMessage("Retrying ...");
+    setStartTime();
   }
   Lcd.clear();
 
