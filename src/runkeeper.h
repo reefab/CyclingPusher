@@ -6,7 +6,8 @@
  *      Author: reefab
  */
 
-IPAddress server(74,50,63,142);
+// IPAddress server(199,231,76,86);
+#define server "api.runkeeper.com"
 #define status_inprogress "Uploading result"
 #define status_failure "failed to connect"
 #define status_data_uploaded "Data uploaded"
@@ -16,7 +17,8 @@ IPAddress server(74,50,63,142);
 boolean uploadResult(String startTimeStr, unsigned int totalDistance, unsigned long effectiveTime)
 {
     String data;
-    data.reserve(128);
+    startTimeStr.trim();
+    data.reserve(150);
     data += "{";
     data += "\"type\": \"Cycling\",";
     data += "\"equipment\": \"Stationary Bike\",";
@@ -30,22 +32,25 @@ boolean uploadResult(String startTimeStr, unsigned int totalDistance, unsigned l
     data += (int) (effectiveTime / 1000UL);
     data += "}";
 
-    Serial.print(data);
+    data.trim();
+    Serial.println(data);
 
     if (client.connect(server, 80)) {
         Lcd.infoMessage(status_inprogress);
-        client.println("POST /fitnessActivities HTTP/1.1");
-        client.println("HOST: api.runkeeper.com");
-        client.println("User-Agent: Arduino/1.0");
-        client.print("Authorization: ");
+        client.println(F("POST /fitnessActivities HTTP/1.1"));
+        client.println(F("Host: api.runkeeper.com"));
+        client.println(F("Content-Type: application/vnd.com.runkeeper.NewFitnessActivity+json"));
+        client.println(F("User-Agent: Arduino/1.0"));
+        client.print(F("Authorization: "));
         client.println(accessToken);
-        client.println("Content-Type: application/vnd.com.runkeeper.NewFitnessActivity+json");
-        client.print("Content-Length: ");
+        client.print(F("Content-Length: "));
         client.println(data.length());
         client.println();
         client.println(data);
+        Serial.println(data);
         delay(500);
     } else {
+        Serial.println(F("Conn. Failed"));
         Lcd.errorMessage(status_failure);
         delay(1000);
     }
