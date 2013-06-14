@@ -1,3 +1,4 @@
+// vim: filetype=arduino
 #include "Arduino.h"
 #include "lcdwrapper.h"
 

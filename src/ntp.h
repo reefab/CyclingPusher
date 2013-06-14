@@ -1,3 +1,4 @@
+// vim: filetype=arduino
 // NTP
 const unsigned int localPort = 8888;      // local port to listen for UDP packets
 const int NTP_PACKET_SIZE= 48; // NTP time stamp is in the first 48 bytes of the message

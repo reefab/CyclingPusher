@@ -1,3 +1,4 @@
+// vim: filetype=arduino
 void saveProgress(String startTimeStr, unsigned int totalDistance, unsigned long effectiveTime, boolean erase=false) {
 
     unsigned int time = effectiveTime / 1000UL;

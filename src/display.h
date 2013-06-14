@@ -1,3 +1,5 @@
+// vim: filetype=arduino
+
 #include <stdlib.h>
 
 #define numberOfSecondLine 3
