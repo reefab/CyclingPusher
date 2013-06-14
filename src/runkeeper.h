@@ -1,3 +1,4 @@
+// vim: filetype=arduino
 /*
  * Cycling Pusher Runkeeper lib
  *
@@ -6,7 +7,6 @@
  *      Author: reefab
  */
 
-// IPAddress server(199,231,76,86);
 #define server "api.runkeeper.com"
 #define status_inprogress "Uploading result"
 #define status_failure "failed to connect"
@@ -14,40 +14,29 @@
 #define status_session_created "Session Created"
 #define status_error_code "ERROR: Server returned "
 
+
+
 boolean uploadResult(String startTimeStr, unsigned int totalDistance, unsigned long effectiveTime)
 {
-    String data;
-    startTimeStr.trim();
-    data.reserve(150);
-    data += "{";
-    data += "\"type\": \"Cycling\",";
-    data += "\"equipment\": \"Stationary Bike\",";
-    data += "\"start_time\": \"";
-    data += startTimeStr;
-    data += "\",";
-    data += "\"total_distance\": ";
-    data += totalDistance;
-    data += ",";
-    data += "\"duration\":";
-    data += (int) (effectiveTime / 1000UL);
-    data += "}";
+    static FILE http_data = {0} ;
 
-    data.trim();
+    startTimeStr.trim();
+    fprintf_P(&http_data, PSTR("POST /fitnessActivities HTTP/1.1\nHost: api.runkeeper.com\nContent-Type: application/vnd.com.runkeeper.NewFitnessActivity+json\nUser-Agent: Arduino/1.0\nAuthorization: %s\n\n{\"type\": \"Cycling\", \"equipment\": \"Stationary Bike\", \"start_time\": \"%s\", \"total_distance\": %d, \"duration\": %d}"),
+        accessToken,
+        startTimeStr,
+        totalDistance,
+        (int) (effectiveTime / 1000UL)
+    );
 
     if (client.connect(server, 80)) {
         Lcd.infoMessage(status_inprogress);
         Serial.println(F("connected"));
-        client.println(F("POST /fitnessActivities HTTP/1.1"));
-        client.println(F("Host: api.runkeeper.com"));
-        client.println(F("Content-Type: application/vnd.com.runkeeper.NewFitnessActivity+json"));
-        client.println(F("User-Agent: Arduino/1.0"));
-        client.print(F("Authorization: "));
-        client.println(accessToken);
-        client.print(F("Content-Length: "));
-        client.println(data.length());
-        client.println();
-        client.println(data);
-        Serial.println(data);
+        char i = '\0';
+        while(!feof(&http_data)) {
+            i = fgetc(&http_data);
+            client.write(i);
+            Serial.print(i);
+        }
         delay(2000);
     } else {
         Serial.println(F("Conn. Failed"));
