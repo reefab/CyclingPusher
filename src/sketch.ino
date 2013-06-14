@@ -22,6 +22,7 @@
 #include <SPI.h>
 #include <Ethernet.h>
 #include <EthernetUdp.h>
+#include <Dns.h>
 #include <Time.h>
 #include <IPAddress.h>
 #include <EEPROM.h>
@@ -108,11 +109,10 @@ void setup() {
   Lcd.infoMessage("  Starting up.");
 
   // start Ethernet
-  Ethernet.begin(mac, ip, gateway, dns_server);
+  if(!Ethernet.begin(mac)) {
+      Ethernet.begin(mac, ip, gateway, dns_server);
+  }
   delay(1000);
-  // while(!client) {
-  //     // Wait until ready
-  // }
 
   // Upload saved session if present
   if (savePresent()) {
