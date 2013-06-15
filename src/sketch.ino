@@ -28,6 +28,7 @@
 #include <EEPROM.h>
 
 EthernetClient client;
+DNSClient Dns;
 
 #include "config.h"
 #include "ntp.h"
@@ -112,7 +113,10 @@ void setup() {
   if(!Ethernet.begin(mac)) {
       Ethernet.begin(mac, ip, gateway, dns_server);
   }
+  Serial.print("IP: ");
+  Serial.println(Ethernet.localIP());
   delay(1000);
+  Dns.begin(Ethernet.dnsServerIP());
 
   // Upload saved session if present
   if (savePresent()) {
@@ -139,6 +143,8 @@ void setup() {
     Lcd.errorMessage("Retrying ...");
     setStartTime();
   }
+  Serial.print("Time: ");
+  Serial.println(getTimeString());
   Lcd.clear();
 
   // Reed switch handling by interrupt

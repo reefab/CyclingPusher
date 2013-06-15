@@ -4,6 +4,7 @@ const unsigned int localPort = 8888;      // local port to listen for UDP packet
 const int NTP_PACKET_SIZE= 48; // NTP time stamp is in the first 48 bytes of the message
 byte packetBuffer[ NTP_PACKET_SIZE]; //buffer to hold incoming and outgoing packets
 IPAddress timeServer;
+IPAddress defaultTimeServer(192, 43, 244, 18); // fallback IP address
 // A UDP instance to let us send and receive packets over UDP
 EthernetUDP Udp;
 
@@ -32,10 +33,18 @@ unsigned long sendNTPpacket(IPAddress& address)
 }
 
 unsigned long getTimeStamp() {
-    DNSClient dns;
-    dns.begin(Ethernet.dnsServerIP());
-    dns.getHostByName("pool.ntp.org",timeServer);
-    sendNTPpacket(timeServer); // send an NTP packet to a time server
+    if(Dns.getHostByName("pool.ntp.org", timeServer) == 1 ){
+        Serial.println(F("DNS resolve..."));
+        Serial.print(F("pool.ntp.org"));
+        Serial.print("  = ");
+        Serial.println(timeServer);
+        sendNTPpacket(timeServer);
+    }else{
+        Serial.print(F("DNS fail..."));
+        Serial.print(F("time.nist.gov = "));
+        Serial.println(defaultTimeServer);	// fallback
+        sendNTPpacket(defaultTimeServer); 	// send an NTP packet to a time server
+    }
     // wait to see if a reply is available
     delay(1500);
     if ( Udp.parsePacket() ) {

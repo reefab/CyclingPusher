@@ -47,10 +47,12 @@ void LcdWrapper::message(String str, int delay, bool error) {
 
 void LcdWrapper::infoMessage(String str) {
     message(str, 1000, false);
+    Serial.println(str);
 }
 
 void LcdWrapper::errorMessage(String str) {
     message(str, 1000, true);
+    Serial.println(str);
 }
 
 void LcdWrapper::setSecondLine(String str) {
