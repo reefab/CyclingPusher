@@ -34,14 +34,11 @@ unsigned long sendNTPpacket(IPAddress& address)
 
 unsigned long getTimeStamp() {
     if(Dns.getHostByName("pool.ntp.org", timeServer) == 1 ){
-        Serial.println(F("DNS resolve..."));
-        Serial.print(F("pool.ntp.org"));
-        Serial.print("  = ");
+        Serial.println(F("DNS resolve... = "));
         Serial.println(timeServer);
         sendNTPpacket(timeServer);
     }else{
-        Serial.print(F("DNS fail..."));
-        Serial.print(F("time.nist.gov = "));
+        Serial.print(F("DNS fallback..."));
         Serial.println(defaultTimeServer);	// fallback
         sendNTPpacket(defaultTimeServer); 	// send an NTP packet to a time server
     }

@@ -121,7 +121,6 @@ void setup() {
   // Upload saved session if present
   if (savePresent()) {
       Lcd.infoMessage("Prev. act. found");
-      Lcd.setSecondLine("Uploading");
       delay(1000);
       uploaded = uploadResult(getSavedStartTimeStr(), getSavedDistance(), getSavedTime());
       if(uploaded) {
@@ -134,7 +133,7 @@ void setup() {
   Lcd.clear();
 
   // get time
-  Lcd.setSecondLine("Getting Time...");
+  /*Lcd.setSecondLine("Getting Time...");*/
   setStartTime();
   delay(1000);
   // Retry if unable to get time from NTP
@@ -143,7 +142,7 @@ void setup() {
     Lcd.errorMessage("Retrying ...");
     setStartTime();
   }
-  Serial.print("Time: ");
+  Serial.print(F("Time: "));
   Serial.println(getTimeString());
   Lcd.clear();
 
