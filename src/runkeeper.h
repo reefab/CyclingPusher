@@ -18,25 +18,19 @@
 
 boolean uploadResult(String startTimeStr, unsigned int totalDistance, unsigned long effectiveTime)
 {
-    static FILE http_data = {0} ;
-
-    startTimeStr.trim();
-    fprintf_P(&http_data, PSTR("POST /fitnessActivities HTTP/1.1\nHost: api.runkeeper.com\nContent-Type: application/vnd.com.runkeeper.NewFitnessActivity+json\nUser-Agent: Arduino/1.0\nAuthorization: %s\n\n{\"type\": \"Cycling\", \"equipment\": \"Stationary Bike\", \"start_time\": \"%s\", \"total_distance\": %d, \"duration\": %d}"),
-        accessToken,
-        startTimeStr,
-        totalDistance,
-        (int) (effectiveTime / 1000UL)
-    );
-
     if (client.connect(server, 80)) {
         Lcd.infoMessage(status_inprogress);
         Serial.println(F("connected"));
-        char i = '\0';
-        while(!feof(&http_data)) {
-            i = fgetc(&http_data);
-            client.write(i);
-            Serial.print(i);
-        }
+        client.print(F("POST /fitnessActivities HTTP/1.1\nHost: api.runkeeper.com\nContent-Type: application/vnd.com.runkeeper.NewFitnessActivity+json\nUser-Agent: Arduino/1.0\nAuthorization: "));
+        client.println(accessToken);
+        client.println();
+        client.print(F("{\"type\": \"Cycling\", \"equipment\": \"Stationary Bike\", \"start_time\": \""));
+        client.println(startTimeStr);
+        client.print(F("\", \"total_distance\": "));
+        client.println(totalDistance);
+        client.print(F("duration\": "));
+        client.println((int) (effectiveTime / 1000UL));
+        client.print("}");
         delay(2000);
     } else {
         Serial.println(F("Conn. Failed"));
