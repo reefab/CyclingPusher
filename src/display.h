@@ -1,7 +1,15 @@
 // vim: filetype=arduino
 
+extern float currentSpeed;
+extern unsigned int totalDistance;
+extern unsigned long effectiveTime;
+extern volatile boolean paused;
+extern LcdWrapper Lcd;
+
 #include <stdlib.h>
 
+// Change the data displayed on the second line of the lcd every X seconds
+#define changeSecondLine 3
 #define numberOfSecondLine 3
 #define pause_str "--===Paused===--"
 #define speed_str "Speed: "

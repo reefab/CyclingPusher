@@ -7,6 +7,9 @@
  *      Author: reefab
  */
 
+extern LcdWrapper Lcd;
+extern EthernetClient client;
+
 IPAddress api_server;
 
 boolean uploadResult(String startTimeStr, unsigned int totalDistance, unsigned long effectiveTime)
