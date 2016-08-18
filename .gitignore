@@ -1,7 +1,6 @@
 *.swp
-config.h
+api-config.h
 .build
-ino.ini
 
 *.gch
 /src/tags

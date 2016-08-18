@@ -1,3 +1,4 @@
+// vim: set ft=arduino:
 #include "Arduino.h"
 
 #include <Adafruit_GFX.h>    // Core graphics library
@@ -13,48 +14,42 @@
 #include <WiFiUdp.h>
 #include <Time.h>
 
+#include <config.h>
+
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP);
 
-// For the breakout, you can use any 2 or 3 pins
-// These pins will also work for the 1.8" TFT shield
-#define TFT_CS     D2
-#define TFT_RST    0  // you can also connect this to the Arduino reset
-                      // in which case, set this #define pin to 0!
-#define TFT_DC     D3
-
-// Option 1 (recommended): must use the hardware SPI pins
-// (for UNO thats sclk = 13 and sid = 11) and pin 10 must be
-// an output. This is much faster - also required if you want
-// to use the microSD card (see the image drawing example)
 Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS,  TFT_DC, TFT_RST);
 
-// Option 2: use any pins but a little slower!
-#define TFT_SCLK 13   // set these to be whatever pins you like!
-#define TFT_MOSI 11   // set these to be whatever pins you like!
-//Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCLK, TFT_RST);
+// Global Vars
+unsigned int nbRotation = 0;
+unsigned int updateCount = 0;
+unsigned int totalDistance = 0;
+/* unsigned int lastBeep = 0; */
+/* unsigned int beepCount = 0; */
+unsigned long lastUpdate = 0;
+unsigned long currentTime = 0;
+unsigned long startTime = 0;
+unsigned long enterLoop = 0;
+unsigned long exitLoop = 0;
+unsigned long timeElasped = 0;
+unsigned long effectiveTime = 0;
+unsigned long lastSave = 0;
+volatile boolean paused = false;
+volatile boolean resetRequested = false;
+volatile boolean start = false;
+/* volatile boolean diagLed = false; */
+volatile unsigned long lastHallActivation = 0;
+volatile unsigned int rotationCount = 0;
+const float meterPerTurn = METER_PER_TURN;
 
-void tftPrintTest() {
-  tft.setTextWrap(false);
-  tft.fillScreen(ST7735_BLACK);
-  tft.setCursor(0, 30);
-  tft.setTextColor(ST7735_RED);
-  tft.setTextSize(1);
-  tft.println("Hello World!");
-  tft.setTextColor(ST7735_YELLOW);
-  tft.setTextSize(2);
-  tft.println("Hello World!");
-  tft.setTextColor(ST7735_GREEN);
-  tft.setTextSize(3);
-  tft.println("Hello World!");
-  tft.setTextColor(ST7735_BLUE);
-  tft.setTextSize(4);
-  tft.print(1234.567);
-  delay(1500);
-  tft.setCursor(0, 0);
-}
+// For display during init and sending via API
+String startTimeStr;
+float currentSpeed = 0;
+boolean done = false;
+boolean uploaded = false;
 
-String prettyDigits(int digits){
+String prettyDigits(int digits) {
     // utility function for digital clock display: prints preceding colon and leading 0
     String output = ":";
     if(digits < 10)
@@ -79,51 +74,192 @@ String getTimeString() {
     return str_time;
 }
 
-void setup(void) {
-  Serial.begin(9600);
-  Serial.print("Hello! ST7735 TFT Test");
-
-  // Use this initializer if you're using a 1.8" TFT
-  tft.initR(INITR_BLACKTAB);   // initialize a ST7735S chip, black tab
-
-  // Use this initializer (uncomment) if you're using a 1.44" TFT
-  //tft.initR(INITR_144GREENTAB);   // initialize a ST7735S chip, black tab
-
-  Serial.println("Initialized");
-
-  uint16_t time = millis();
-  tft.fillScreen(ST7735_BLACK);
-  time = millis() - time;
-  Serial.println(time, DEC);
-
-  tft.setTextWrap(true);
-  tft.fillScreen(ST7735_BLACK);
-  tft.setCursor(0, 0);
-  tft.setTextColor(ST7735_WHITE);
-  tft.setTextSize(1);
-
-  WiFiManager wifiManager;
-  wifiManager.autoConnect("CyclingPusher");
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    tft.print(".");
-  }
-
-  tft.setTextColor(ST7735_WHITE);
-  tft.println("Connected to Wifi");
-  tft.print("IP: ");
-  tft.setTextColor(ST7735_BLUE);
-  tft.println(WiFi.localIP());
-
-  timeClient.begin();
-  timeClient.update();
-  setTime(timeClient.getEpochTime());
-  tft.setTextColor(ST7735_WHITE);
-  tft.println("Time: ");
-  tft.setTextColor(ST7735_BLUE);
-  tft.println(getTimeString());
+void turnCounter() {
+    if (millis() - lastHallActivation > HALL_RES)
+    {
+        digitalWrite(DIAG_LED, HIGH);
+        // Start a new session at first pedal turn
+        if (rotationCount == 0) {
+            resetRequested = true;
+            start = true;
+        }
+        if (paused) paused = false;
+        rotationCount++;
+    }
+    lastHallActivation = millis();
+    digitalWrite(DIAG_LED, LOW);
+    /* if (diagLed == false) { */
+    /*     diagLed = true; */
+    /* } else { */
+    /*     diagLed = false; */
+    /* } */
 }
 
+boolean isSessionValid() {
+    return ((totalDistance > (unsigned int) MIN_DISTANCE) &&
+            (effectiveTime > ((unsigned long) MIN_TIME * 1000)));
+}
+
+void setup(void) {
+    // Diag led
+    pinMode(DIAG_LED, OUTPUT);
+    // Hall sensor
+    pinMode(HALL_PIN, INPUT);
+
+    Serial.begin(9600);
+    // initialize a ST7735S chip, black tab
+    tft.initR(INITR_BLACKTAB);
+    tft.setRotation(TFT_ROTATION);
+
+    tft.fillScreen(ST7735_BLACK);
+
+    tft.setTextWrap(true);
+    tft.fillScreen(ST7735_BLACK);
+    tft.setCursor(0, 0);
+    tft.setTextColor(ST7735_WHITE);
+    tft.setTextSize(1);
+
+    WiFiManager wifiManager;
+    wifiManager.autoConnect("CyclingPusher");
+
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        tft.print(".");
+    }
+
+    tft.setTextColor(ST7735_WHITE);
+    tft.println("Connected to Wifi");
+    tft.print("IP: ");
+    tft.setTextColor(ST7735_BLUE);
+    tft.println(WiFi.localIP());
+
+    uint32_t timestamp;
+    do {
+        delay(100);
+        timeClient.begin();
+        timeClient.update();
+        timestamp = timeClient.getEpochTime();
+    } while (timestamp == 0);
+    setTime(timestamp);
+
+    tft.setTextColor(ST7735_WHITE);
+    tft.print("Time: ");
+    tft.setTextColor(ST7735_BLUE);
+    tft.println(getTimeString());
+    Serial.print("Time: ");
+    Serial.println(getTimeString());
+
+    lastHallActivation = millis();
+    attachInterrupt(digitalPinToInterrupt(HALL_PIN), turnCounter, RISING);
+}
+
+void reset(boolean startNew=false)
+{
+  rotationCount = 0;
+  updateCount = 0;
+  totalDistance = 0;
+  currentSpeed = 0;
+  done = false;
+  uploaded = false;
+  lastHallActivation = millis();
+  lastUpdate = 0;
+  currentTime = 0;
+  startTime = 0;
+  timeElasped = 0;
+  effectiveTime = 0;
+  if (startNew) {
+    startTimeStr = getTimeString();
+    start = false;
+  }
+  paused = false;
+}
+
+
 void loop() {
+    if (digitalRead(HALL_PIN) == LOW) {
+        digitalWrite(DIAG_LED, HIGH);
+        /* Serial.println("Turn!"); */
+    } else {
+        digitalWrite(DIAG_LED, LOW);
+    }
+
+    enterLoop = millis();
+    delay(100);
+    // Activity finished & api push
+    if (done == true) { // && !client.connected() && !uploaded) {
+        Serial.println(" Activity ended ");
+        /* Lcd.switchBacklight(true); */
+        /* saveProgress(startTimeStr, totalDistance, effectiveTime); */
+        /* delay(500); */
+        /* Serial.println(" Activity saved "); */
+        // Try to upload the saved result
+        /* uploaded = uploadResult(startTimeStr, totalDistance, effectiveTime); */
+        /* if(uploaded) { */
+        /*     resetRequested=true; */
+        /*     eraseProgress(); */
+        /* } */
+        /* delay(5000); */
+        /* Lcd.switchBacklight(false); */
+    } else {
+        // Activity in progres
+        // Start a new session if requested
+        if (resetRequested) {
+            delay(250);
+            reset(start);
+            if (start) {
+                Serial.println("Activity started");
+            }
+            delay(250);
+            resetRequested = false;
+        }
+        // Update turns and distance
+        nbRotation = rotationCount - updateCount;
+        if (nbRotation >= INTERVAL)
+        {
+            currentTime = millis();
+            timeElasped = currentTime - lastUpdate;
+            float distance = nbRotation * meterPerTurn;
+            currentSpeed = ((float) distance / (float) timeElasped) * 3600;
+            totalDistance = rotationCount * meterPerTurn;
+            updateCount = rotationCount;
+            lastUpdate = currentTime;
+        }
+        // Update time
+        if((millis() - lastHallActivation < ((unsigned long) 1000 * TIMEOUT)) && (rotationCount > 0))
+        {
+            exitLoop = millis();
+            effectiveTime = effectiveTime + (exitLoop - enterLoop);
+        } else if((millis() - lastHallActivation) < ((unsigned long) 1000 * MAX_TIME)) {
+            // Automatic activity pause
+            paused = true;
+            currentSpeed = 0;
+            // Display sleep if needed
+            /* if ((( (millis() - lastHallActivation) > ((unsigned long) 1000 * displaySleep)))) */
+            /* { */
+            /*     Lcd.switchBacklight(false); */
+            /* } */
+        } else {
+            // upload session if there is pertinent data, otherwise just reset
+            if (isSessionValid()) {
+                done = true;
+            } else if(rotationCount > 0) {
+                Serial.println("Discarding data.");
+                delay(1000);
+                resetRequested = true;
+                /* eraseProgress(); */
+            }
+        }
+        // Save session data regularly
+        /* if(isSessionValid() && ((millis() - lastSave) > ((unsigned long) 1000 * saveInterval))) { */
+        /*     saveProgress(startTimeStr, totalDistance, effectiveTime); */
+        /*     lastSave = millis(); */
+        /* } */
+        // Beep if needed
+        /* if(totalDistance >= (beepCount * beepInterval)) { */
+        /*     beepCount++; */
+        /*     tone(A0, 2349, 250); */
+        /* } */
+
+        /* displayInfo(); */
+    }
 }
