@@ -30,6 +30,4 @@
 // TFT rotation
 #define TFT_ROTATION 3
 // Pin for the hall sensor
-#define HALL_PIN D0
-// Diag LEd
-#define DIAG_LED D4
+#define HALL_PIN 5

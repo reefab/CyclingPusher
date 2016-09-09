@@ -15,6 +15,9 @@
 #include <Time.h>
 
 #include <config.h>
+#include <Fonts/FreeSansBold18pt7b.h>
+#define FONT_NAME FreeSansBold18pt7b
+#include <display.h>
 
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP);
@@ -75,9 +78,12 @@ String getTimeString() {
 }
 
 void turnCounter() {
+    static int state = 0;
+    state = !state;
+    digitalWrite(BUILTIN_LED, state);
     if (millis() - lastHallActivation > HALL_RES)
     {
-        digitalWrite(DIAG_LED, HIGH);
+        /* digitalWrite(DIAG_LED, HIGH); */
         // Start a new session at first pedal turn
         if (rotationCount == 0) {
             resetRequested = true;
@@ -87,12 +93,7 @@ void turnCounter() {
         rotationCount++;
     }
     lastHallActivation = millis();
-    digitalWrite(DIAG_LED, LOW);
-    /* if (diagLed == false) { */
-    /*     diagLed = true; */
-    /* } else { */
-    /*     diagLed = false; */
-    /* } */
+    /* digitalWrite(DIAG_LED, LOW); */
 }
 
 boolean isSessionValid() {
@@ -102,7 +103,7 @@ boolean isSessionValid() {
 
 void setup(void) {
     // Diag led
-    pinMode(DIAG_LED, OUTPUT);
+    pinMode(BUILTIN_LED, OUTPUT);
     // Hall sensor
     pinMode(HALL_PIN, INPUT);
 
@@ -150,7 +151,11 @@ void setup(void) {
     Serial.println(getTimeString());
 
     lastHallActivation = millis();
-    attachInterrupt(digitalPinToInterrupt(HALL_PIN), turnCounter, RISING);
+    attachInterrupt(HALL_PIN, turnCounter, RISING);
+    turnCounter();
+
+    tft.fillScreen(ST7735_WHITE);
+    tft.setFont(&FONT_NAME);
 }
 
 void reset(boolean startNew=false)
@@ -176,13 +181,6 @@ void reset(boolean startNew=false)
 
 
 void loop() {
-    if (digitalRead(HALL_PIN) == LOW) {
-        digitalWrite(DIAG_LED, HIGH);
-        /* Serial.println("Turn!"); */
-    } else {
-        digitalWrite(DIAG_LED, LOW);
-    }
-
     enterLoop = millis();
     delay(100);
     // Activity finished & api push
@@ -204,12 +202,10 @@ void loop() {
         // Activity in progres
         // Start a new session if requested
         if (resetRequested) {
-            delay(250);
             reset(start);
             if (start) {
                 Serial.println("Activity started");
             }
-            delay(250);
             resetRequested = false;
         }
         // Update turns and distance
@@ -260,6 +256,6 @@ void loop() {
         /*     tone(A0, 2349, 250); */
         /* } */
 
-        /* displayInfo(); */
+        displayInfo();
     }
 }
