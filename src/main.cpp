@@ -28,8 +28,6 @@ Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS,  TFT_DC, TFT_RST);
 unsigned int nbRotation = 0;
 unsigned int updateCount = 0;
 unsigned int totalDistance = 0;
-/* unsigned int lastBeep = 0; */
-/* unsigned int beepCount = 0; */
 unsigned long lastUpdate = 0;
 unsigned long currentTime = 0;
 unsigned long startTime = 0;
@@ -37,23 +35,20 @@ unsigned long enterLoop = 0;
 unsigned long exitLoop = 0;
 unsigned long timeElasped = 0;
 unsigned long effectiveTime = 0;
-unsigned long lastSave = 0;
+/* unsigned long lastSave = 0; */
 volatile boolean paused = false;
-volatile boolean resetRequested = false;
-volatile boolean start = false;
-/* volatile boolean diagLed = false; */
 volatile unsigned long lastHallActivation = 0;
 volatile unsigned int rotationCount = 0;
 const float meterPerTurn = METER_PER_TURN;
-
-// For display during init and sending via API
-String startTimeStr;
 float currentSpeed = 0;
 boolean done = false;
 boolean uploaded = false;
+// For display during init and sending via API
+String startTimeStr;
 
+
+// utility function for digital clock display: prints preceding colon and leading 0
 String prettyDigits(int digits) {
-    // utility function for digital clock display: prints preceding colon and leading 0
     String output = ":";
     if(digits < 10)
         output += '0';
@@ -77,23 +72,43 @@ String getTimeString() {
     return str_time;
 }
 
+void reset(boolean startNew=false) {
+  Serial.print("Session Reset");
+  rotationCount = 0;
+  updateCount = 0;
+  totalDistance = 0;
+  currentSpeed = 0;
+  done = false;
+  uploaded = false;
+  lastHallActivation = millis();
+  lastUpdate = 0;
+  currentTime = 0;
+  startTime = 0;
+  timeElasped = 0;
+  effectiveTime = 0;
+  if (startNew) startTimeStr = getTimeString();
+  paused = false;
+}
+
+// Start a new session if requested
+void startNewSession() {
+    Serial.println("Activity started");
+    reset(true);
+}
+
 void turnCounter() {
-    static int state = 0;
-    state = !state;
-    digitalWrite(BUILTIN_LED, state);
-    if (millis() - lastHallActivation > HALL_RES)
-    {
-        /* digitalWrite(DIAG_LED, HIGH); */
+    unsigned long delta = millis() - lastHallActivation;
+    Serial.print("Hall activation: ");
+    Serial.println(delta);
+    if (delta > (unsigned long) HALL_RES) {
         // Start a new session at first pedal turn
         if (rotationCount == 0) {
-            resetRequested = true;
-            start = true;
+            Serial.println("Should start new session");
+            startNewSession();
         }
-        if (paused) paused = false;
         rotationCount++;
     }
     lastHallActivation = millis();
-    /* digitalWrite(DIAG_LED, LOW); */
 }
 
 boolean isSessionValid() {
@@ -135,12 +150,13 @@ void setup(void) {
     tft.println(WiFi.localIP());
 
     uint32_t timestamp;
+    bool updateResult = false;
     do {
         delay(100);
         timeClient.begin();
-        timeClient.update();
+        updateResult = timeClient.update();
         timestamp = timeClient.getEpochTime();
-    } while (timestamp == 0);
+    } while (!updateResult);
     setTime(timestamp);
 
     tft.setTextColor(ST7735_WHITE);
@@ -157,28 +173,6 @@ void setup(void) {
     tft.fillScreen(ST7735_WHITE);
     tft.setFont(&FONT_NAME);
 }
-
-void reset(boolean startNew=false)
-{
-  rotationCount = 0;
-  updateCount = 0;
-  totalDistance = 0;
-  currentSpeed = 0;
-  done = false;
-  uploaded = false;
-  lastHallActivation = millis();
-  lastUpdate = 0;
-  currentTime = 0;
-  startTime = 0;
-  timeElasped = 0;
-  effectiveTime = 0;
-  if (startNew) {
-    startTimeStr = getTimeString();
-    start = false;
-  }
-  paused = false;
-}
-
 
 void loop() {
     enterLoop = millis();
@@ -200,14 +194,6 @@ void loop() {
         /* Lcd.switchBacklight(false); */
     } else {
         // Activity in progres
-        // Start a new session if requested
-        if (resetRequested) {
-            reset(start);
-            if (start) {
-                Serial.println("Activity started");
-            }
-            resetRequested = false;
-        }
         // Update turns and distance
         nbRotation = rotationCount - updateCount;
         if (nbRotation >= INTERVAL)
@@ -225,8 +211,9 @@ void loop() {
         {
             exitLoop = millis();
             effectiveTime = effectiveTime + (exitLoop - enterLoop);
-        } else if((millis() - lastHallActivation) < ((unsigned long) 1000 * MAX_TIME)) {
+        } else if(((millis() - lastHallActivation) < ((unsigned long) 1000 * MAX_TIME)) && (!paused)) {
             // Automatic activity pause
+            Serial.println("Autopausing.");
             paused = true;
             currentSpeed = 0;
             // Display sleep if needed
@@ -241,7 +228,7 @@ void loop() {
             } else if(rotationCount > 0) {
                 Serial.println("Discarding data.");
                 delay(1000);
-                resetRequested = true;
+                reset();
                 /* eraseProgress(); */
             }
         }

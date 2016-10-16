@@ -19,14 +19,17 @@ String floatToString(float float_val)
 
 void displayInfo() {
     if (paused) {
+        tft.fillScreen(ST7735_WHITE);
         tft.setCursor(10, 56);
         tft.setTextColor(ST7735_BLACK);
         tft.println("PAUSED");
     } else {
-        tft.setCursor(0, 0);
+        tft.fillScreen(ST7735_WHITE);
+        tft.setCursor(0, 56);
         tft.setTextColor(ST7735_RED);
         tft.print(floatToString(currentSpeed));
         tft.setTextColor(ST7735_BLACK);
+        /* tft.setTextSize(1); */
         tft.print("km/h");
     }
     /* if ( (millis() - lastSecondLineChange) > ((unsigned long) changeSecondLine * 1000UL)) { */
