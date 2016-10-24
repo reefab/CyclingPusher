@@ -18,6 +18,7 @@
 #include <Fonts/FreeSansBold18pt7b.h>
 #define FONT_NAME FreeSansBold18pt7b
 #include <display.h>
+#include <Task.h>
 
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP);
@@ -45,7 +46,7 @@ boolean done = false;
 boolean uploaded = false;
 // For display during init and sending via API
 String startTimeStr;
-
+TaskManager taskManager;
 
 // utility function for digital clock display: prints preceding colon and leading 0
 String prettyDigits(int digits) {
@@ -116,65 +117,7 @@ boolean isSessionValid() {
             (effectiveTime > ((unsigned long) MIN_TIME * 1000)));
 }
 
-void setup(void) {
-    // Diag led
-    pinMode(BUILTIN_LED, OUTPUT);
-    // Hall sensor
-    pinMode(HALL_PIN, INPUT);
-
-    Serial.begin(9600);
-    // initialize a ST7735S chip, black tab
-    tft.initR(INITR_BLACKTAB);
-    tft.setRotation(TFT_ROTATION);
-
-    tft.fillScreen(ST7735_BLACK);
-
-    tft.setTextWrap(true);
-    tft.fillScreen(ST7735_BLACK);
-    tft.setCursor(0, 0);
-    tft.setTextColor(ST7735_WHITE);
-    tft.setTextSize(1);
-
-    WiFiManager wifiManager;
-    wifiManager.autoConnect("CyclingPusher");
-
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(500);
-        tft.print(".");
-    }
-
-    tft.setTextColor(ST7735_WHITE);
-    tft.println("Connected to Wifi");
-    tft.print("IP: ");
-    tft.setTextColor(ST7735_BLUE);
-    tft.println(WiFi.localIP());
-
-    uint32_t timestamp;
-    bool updateResult = false;
-    do {
-        delay(100);
-        timeClient.begin();
-        updateResult = timeClient.update();
-        timestamp = timeClient.getEpochTime();
-    } while (!updateResult);
-    setTime(timestamp);
-
-    tft.setTextColor(ST7735_WHITE);
-    tft.print("Time: ");
-    tft.setTextColor(ST7735_BLUE);
-    tft.println(getTimeString());
-    Serial.print("Time: ");
-    Serial.println(getTimeString());
-
-    lastHallActivation = millis();
-    attachInterrupt(HALL_PIN, turnCounter, RISING);
-    turnCounter();
-
-    tft.fillScreen(ST7735_WHITE);
-    tft.setFont(&FONT_NAME);
-}
-
-void loop() {
+void updateData(uint32_t deltaTime) {
     enterLoop = millis();
     delay(100);
     // Activity finished & api push
@@ -242,7 +185,80 @@ void loop() {
         /*     beepCount++; */
         /*     tone(A0, 2349, 250); */
         /* } */
-
-        displayInfo();
     }
+}
+
+void updateDisplay(uint32_t deltaTime) {
+    displayInfo();
+}
+
+FunctionTask taskUpdateData(updateData, MsToTaskTime(100));
+FunctionTask taskUpdateDisplay(updateDisplay, MsToTaskTime(1000));
+
+void setup(void) {
+    // Diag led
+    pinMode(BUILTIN_LED, OUTPUT);
+    // Hall sensor
+    pinMode(HALL_PIN, INPUT);
+
+    Serial.begin(9600);
+    // initialize the LCD
+    tft.initR(INITR_BLACKTAB);
+    tft.setRotation(TFT_ROTATION);
+    tft.fillScreen(ST7735_BLACK);
+    tft.setTextWrap(true);
+    tft.fillScreen(ST7735_BLACK);
+    tft.setCursor(0, 0);
+    tft.setTextColor(ST7735_WHITE);
+    tft.setTextSize(1);
+
+    // Start Wifi
+    WiFiManager wifiManager;
+    wifiManager.autoConnect("CyclingPusher");
+
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        tft.print(".");
+    }
+
+    tft.setTextColor(ST7735_WHITE);
+    tft.println("Connected to Wifi");
+    tft.print("IP: ");
+    tft.setTextColor(ST7735_BLUE);
+    tft.println(WiFi.localIP());
+
+    // Get time via NTP
+    uint32_t timestamp;
+    bool updateResult = false;
+    do {
+        delay(100);
+        timeClient.begin();
+        updateResult = timeClient.update();
+        timestamp = timeClient.getEpochTime();
+    } while (!updateResult);
+    setTime(timestamp);
+
+    tft.setTextColor(ST7735_WHITE);
+    tft.print("Time: ");
+    tft.setTextColor(ST7735_BLUE);
+    tft.println(getTimeString());
+    Serial.print("Time: ");
+    Serial.println(getTimeString());
+
+    // Getting ready to start recording activity
+    lastHallActivation = millis();
+    attachInterrupt(HALL_PIN, turnCounter, RISING);
+    turnCounter();
+
+    // Clear display
+    tft.fillScreen(ST7735_WHITE);
+    tft.setFont(&FONT_NAME);
+
+    // Enable recurring tasks
+    taskManager.StartTask(&taskUpdateData);
+    taskManager.StartTask(&taskUpdateDisplay);
+}
+
+void loop() {
+    taskManager.Loop();
 }

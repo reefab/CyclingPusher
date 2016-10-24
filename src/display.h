@@ -7,8 +7,7 @@ extern unsigned long effectiveTime;
 extern volatile boolean paused;
 extern Adafruit_ST7735 tft;
 
-String floatToString(float float_val)
-{
+String floatToString(float float_val) {
     char number[6];
     if ((int) float_val > 99) {
         return dtostrf(float_val, 5, 1, number);
