@@ -1,8 +1,9 @@
 // vim: set ft=arduino:
-#include "Arduino.h"
+/* #include "Arduino.h" */
 
-#include <Adafruit_GFX.h>    // Core graphics library
-#include <Adafruit_ST7735.h> // Hardware-specific library
+#include <TFT_eSPI.h>
+/* #include <Adafruit_GFX.h>    // Core graphics library */
+/* #include <Adafruit_ST7735.h> // Hardware-specific library */
 #include <SPI.h>
 
 #include <ESP8266WiFi.h>          //ESP8266 Core WiFi Library
@@ -15,15 +16,16 @@
 #include <Time.h>
 
 #include <config.h>
-#include <Fonts/FreeSansBold18pt7b.h>
-#define FONT_NAME FreeSansBold18pt7b
+/* #include <Fonts/FreeSansBold18pt7b.h> */
+/* #define FONT_NAME FreeSansBold18pt7b */
 #include <display.h>
 #include <Task.h>
 
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP);
 
-Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS,  TFT_DC, TFT_RST);
+/* Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS,  TFT_DC, TFT_RST); */
+TFT_eSPI tft = TFT_eSPI();
 
 // Global Vars
 unsigned int nbRotation = 0;
@@ -203,14 +205,9 @@ void setup(void) {
 
     Serial.begin(9600);
     // initialize the LCD
-    tft.initR(INITR_BLACKTAB);
+    tft.init();
     tft.setRotation(TFT_ROTATION);
-    tft.fillScreen(ST7735_BLACK);
-    tft.setTextWrap(true);
-    tft.fillScreen(ST7735_BLACK);
-    tft.setCursor(0, 0);
-    tft.setTextColor(ST7735_WHITE);
-    tft.setTextSize(1);
+    tft.fillScreen(TFT_BLACK);
 
     // Start Wifi
     WiFiManager wifiManager;
@@ -221,10 +218,10 @@ void setup(void) {
         tft.print(".");
     }
 
-    tft.setTextColor(ST7735_WHITE);
+    tft.setTextColor(TFT_WHITE);
     tft.println("Connected to Wifi");
     tft.print("IP: ");
-    tft.setTextColor(ST7735_BLUE);
+    tft.setTextColor(TFT_BLUE);
     tft.println(WiFi.localIP());
 
     // Get time via NTP
@@ -238,9 +235,9 @@ void setup(void) {
     } while (!updateResult);
     setTime(timestamp);
 
-    tft.setTextColor(ST7735_WHITE);
+    tft.setTextColor(TFT_WHITE);
     tft.print("Time: ");
-    tft.setTextColor(ST7735_BLUE);
+    tft.setTextColor(TFT_BLUE);
     tft.println(getTimeString());
     Serial.print("Time: ");
     Serial.println(getTimeString());
@@ -250,13 +247,12 @@ void setup(void) {
     attachInterrupt(HALL_PIN, turnCounter, RISING);
     turnCounter();
 
-    // Clear display
-    tft.fillScreen(ST7735_WHITE);
-    tft.setFont(&FONT_NAME);
-
     // Enable recurring tasks
     taskManager.StartTask(&taskUpdateData);
     taskManager.StartTask(&taskUpdateDisplay);
+
+    // Display meter
+    analogMeter();
 }
 
 void loop() {
