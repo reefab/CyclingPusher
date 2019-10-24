@@ -15,6 +15,7 @@ int value[6] = {0, 0, 0, 0, 0, 0};
 int old_value[6] = { -1, -1, -1, -1, -1, -1};
 int d = 0;
 
+extern int rpm;
 extern float currentSpeed;
 extern unsigned int totalDistance;
 extern unsigned long effectiveTime;
@@ -175,7 +176,7 @@ void analogMeter()
         if (i < 50) tft.drawLine(x0, y0, x1, y1, TFT_BLACK);
     }
 
-    tft.drawString("km/h", M_SIZE*(3 + 230 - 40), M_SIZE*(119 - 20), 2); // Units at bottom right
+    tft.drawString("rpm", M_SIZE*(3 + 230 - 40), M_SIZE*(119 - 20), 2); // Units at bottom right
     /* tft.drawCentreString("%RH", M_SIZE*120, M_SIZE*75, 4); // Comment out to avoid font 4 */
     tft.drawRect(1, M_SIZE*3, M_SIZE*236, M_SIZE*126, TFT_BLACK); // Draw bezel line
 
@@ -191,7 +192,7 @@ void displayInfo() {
         /* tft.println("PAUSED"); */
         plotNeedle(0, 0);
     } else {
-        plotNeedle(currentSpeed, 0);
+        plotNeedle(rpm, 10);
         /* tft.fillScreen(TFT_WHITE); */
         /* tft.setCursor(0, 56); */
         /* tft.setTextColor(TFT_RED); */

@@ -1,9 +1,6 @@
 // vim: set ft=arduino:
-/* #include "Arduino.h" */
 
 #include <TFT_eSPI.h>
-/* #include <Adafruit_GFX.h>    // Core graphics library */
-/* #include <Adafruit_ST7735.h> // Hardware-specific library */
 #include <SPI.h>
 
 #include <ESP8266WiFi.h>          //ESP8266 Core WiFi Library
@@ -16,39 +13,32 @@
 #include <Time.h>
 
 #include <config.h>
-/* #include <Fonts/FreeSansBold18pt7b.h> */
-/* #define FONT_NAME FreeSansBold18pt7b */
 #include <display.h>
 #include <Task.h>
+#include <MD_CirQueue.h>
 
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP);
 
-/* Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS,  TFT_DC, TFT_RST); */
 TFT_eSPI tft = TFT_eSPI();
 
 // Global Vars
-unsigned int nbRotation = 0;
-unsigned int updateCount = 0;
-unsigned int totalDistance = 0;
-unsigned long lastUpdate = 0;
+boolean paused = false;
+volatile unsigned int nbRevolution = 0;
+volatile unsigned long lastHallActivation = 0;
 unsigned long currentTime = 0;
 unsigned long startTime = 0;
-unsigned long enterLoop = 0;
-unsigned long exitLoop = 0;
 unsigned long timeElasped = 0;
-unsigned long effectiveTime = 0;
-/* unsigned long lastSave = 0; */
-volatile boolean paused = false;
-volatile unsigned long lastHallActivation = 0;
-volatile unsigned int rotationCount = 0;
+int rpm = 0;
 const float meterPerTurn = METER_PER_TURN;
-float currentSpeed = 0;
 boolean done = false;
 boolean uploaded = false;
 // For display during init and sending via API
 String startTimeStr;
 TaskManager taskManager;
+
+const unin8_t QUEUE_SIZE = 10;
+MD_CirQueue Queue(QUEUE_SIZE, sizeof(unint32_t));
 
 // utility function for digital clock display: prints preceding colon and leading 0
 String prettyDigits(int digits) {
@@ -76,19 +66,15 @@ String getTimeString() {
 }
 
 void reset(boolean startNew=false) {
-  Serial.print("Session Reset");
-  rotationCount = 0;
-  updateCount = 0;
-  totalDistance = 0;
-  currentSpeed = 0;
+  Serial.println("Session Reset");
+  nbRevolution = 0;
   done = false;
   uploaded = false;
   lastHallActivation = millis();
-  lastUpdate = 0;
   currentTime = 0;
   startTime = 0;
   timeElasped = 0;
-  effectiveTime = 0;
+  rpm = 0;
   if (startNew) startTimeStr = getTimeString();
   paused = false;
 }
@@ -99,18 +85,13 @@ void startNewSession() {
     reset(true);
 }
 
+unsigned int totalDistance () {
+    return nbRevolution * meterPerTurn;
+}
+
 void turnCounter() {
     unsigned long delta = millis() - lastHallActivation;
-    Serial.print("Hall activation: ");
-    Serial.println(delta);
-    if (delta > (unsigned long) HALL_RES) {
-        // Start a new session at first pedal turn
-        if (rotationCount == 0) {
-            Serial.println("Should start new session");
-            startNewSession();
-        }
-        rotationCount++;
-    }
+    if (delta > (unsigned long) HALL_RES) nbRevolution++;
     lastHallActivation = millis();
 }
 
@@ -119,79 +100,83 @@ boolean isSessionValid() {
             (effectiveTime > ((unsigned long) MIN_TIME * 1000)));
 }
 
-void updateData(uint32_t deltaTime) {
-    enterLoop = millis();
-    delay(100);
-    // Activity finished & api push
-    if (done == true) { // && !client.connected() && !uploaded) {
-        Serial.println(" Activity ended ");
-        /* Lcd.switchBacklight(true); */
-        /* saveProgress(startTimeStr, totalDistance, effectiveTime); */
-        /* delay(500); */
-        /* Serial.println(" Activity saved "); */
-        // Try to upload the saved result
-        /* uploaded = uploadResult(startTimeStr, totalDistance, effectiveTime); */
-        /* if(uploaded) { */
-        /*     resetRequested=true; */
-        /*     eraseProgress(); */
-        /* } */
-        /* delay(5000); */
-        /* Lcd.switchBacklight(false); */
-    } else {
-        // Activity in progres
-        // Update turns and distance
-        nbRotation = rotationCount - updateCount;
-        if (nbRotation >= INTERVAL)
-        {
-            currentTime = millis();
-            timeElasped = currentTime - lastUpdate;
-            float distance = nbRotation * meterPerTurn;
-            currentSpeed = ((float) distance / (float) timeElasped) * 3600;
-            totalDistance = rotationCount * meterPerTurn;
-            updateCount = rotationCount;
-            lastUpdate = currentTime;
-        }
-        // Update time
-        if((millis() - lastHallActivation < ((unsigned long) 1000 * TIMEOUT)) && (rotationCount > 0))
-        {
-            exitLoop = millis();
-            effectiveTime = effectiveTime + (exitLoop - enterLoop);
-        } else if(((millis() - lastHallActivation) < ((unsigned long) 1000 * MAX_TIME)) && (!paused)) {
-            // Automatic activity pause
-            Serial.println("Autopausing.");
-            paused = true;
-            currentSpeed = 0;
-            // Display sleep if needed
-            /* if ((( (millis() - lastHallActivation) > ((unsigned long) 1000 * displaySleep)))) */
-            /* { */
-            /*     Lcd.switchBacklight(false); */
-            /* } */
-        } else {
-            // upload session if there is pertinent data, otherwise just reset
-            if (isSessionValid()) {
-                done = true;
-            } else if(rotationCount > 0) {
-                Serial.println("Discarding data.");
-                delay(1000);
-                reset();
-                /* eraseProgress(); */
-            }
-        }
-        // Save session data regularly
-        /* if(isSessionValid() && ((millis() - lastSave) > ((unsigned long) 1000 * saveInterval))) { */
-        /*     saveProgress(startTimeStr, totalDistance, effectiveTime); */
-        /*     lastSave = millis(); */
-        /* } */
-        // Beep if needed
-        /* if(totalDistance >= (beepCount * beepInterval)) { */
-        /*     beepCount++; */
-        /*     tone(A0, 2349, 250); */
-        /* } */
-    }
-}
+/* void updateData(uint32_t deltaTime) { */
+/*     enterLoop = millis(); */
+/*     delay(100); */
+/*     // Activity finished & api push */
+/*     if (done == true) { // && !client.connected() && !uploaded) { */
+/*         Serial.println(" Activity ended "); */
+/*         /1* Lcd.switchBacklight(true); *1/ */
+/*         /1* saveProgress(startTimeStr, totalDistance, effectiveTime); *1/ */
+/*         /1* delay(500); *1/ */
+/*         /1* Serial.println(" Activity saved "); *1/ */
+/*         // Try to upload the saved result */
+/*         /1* uploaded = uploadResult(startTimeStr, totalDistance, effectiveTime); *1/ */
+/*         /1* if(uploaded) { *1/ */
+/*         /1*     resetRequested=true; *1/ */
+/*         /1*     eraseProgress(); *1/ */
+/*         /1* } *1/ */
+/*         /1* delay(5000); *1/ */
+/*         /1* Lcd.switchBacklight(false); *1/ */
+/*     } else { */
+/*         // Activity in progres */
+/*         // Update turns and distance */
+/*         nbRotation = rotationCount - updateCount; */
+/*         if (nbRotation >= INTERVAL) */
+/*         { */
+/*             currentTime = millis(); */
+/*             timeElasped = currentTime - lastUpdate; */
+/*             float distance = nbRotation * meterPerTurn; */
+/*             currentSpeed = ((float) distance / (float) timeElasped) * 3600; */
+/*             totalDistance = rotationCount * meterPerTurn; */
+/*             updateCount = rotationCount; */
+/*             lastUpdate = currentTime; */
+/*         } */
+/*         // Update time */
+/*         if((millis() - lastHallActivation < ((unsigned long) 1000 * TIMEOUT)) && (rotationCount > 0)) */
+/*         { */
+/*             exitLoop = millis(); */
+/*             effectiveTime = effectiveTime + (exitLoop - enterLoop); */
+/*         } else if(((millis() - lastHallActivation) < ((unsigned long) 1000 * MAX_TIME)) && (!paused)) { */
+/*             // Automatic activity pause */
+/*             Serial.println("Autopausing."); */
+/*             paused = true; */
+/*             currentSpeed = 0; */
+/*             // Display sleep if needed */
+/*             /1* if ((( (millis() - lastHallActivation) > ((unsigned long) 1000 * displaySleep)))) *1/ */
+/*             /1* { *1/ */
+/*             /1*     Lcd.switchBacklight(false); *1/ */
+/*             /1* } *1/ */
+/*         } else { */
+/*             // upload session if there is pertinent data, otherwise just reset */
+/*             if (isSessionValid()) { */
+/*                 done = true; */
+/*             } else if(rotationCount > 0) { */
+/*                 Serial.println("Discarding data."); */
+/*                 delay(1000); */
+/*                 reset(); */
+/*                 /1* eraseProgress(); *1/ */
+/*             } */
+/*         } */
+/*         // Save session data regularly */
+/*         /1* if(isSessionValid() && ((millis() - lastSave) > ((unsigned long) 1000 * saveInterval))) { *1/ */
+/*         /1*     saveProgress(startTimeStr, totalDistance, effectiveTime); *1/ */
+/*         /1*     lastSave = millis(); *1/ */
+/*         /1* } *1/ */
+/*         // Beep if needed */
+/*         /1* if(totalDistance >= (beepCount * beepInterval)) { *1/ */
+/*         /1*     beepCount++; *1/ */
+/*         /1*     tone(A0, 2349, 250); *1/ */
+/*         /1* } *1/ */
+/*     } */
+/* } */
 
 void updateDisplay(uint32_t deltaTime) {
     displayInfo();
+}
+
+void updateData(uint32_t deltaTime) {
+    
 }
 
 FunctionTask taskUpdateData(updateData, MsToTaskTime(100));
@@ -244,7 +229,7 @@ void setup(void) {
 
     // Getting ready to start recording activity
     lastHallActivation = millis();
-    attachInterrupt(HALL_PIN, turnCounter, RISING);
+    attachInterrupt(HALL_PIN, turnCounter, FALLING);
     turnCounter();
 
     // Enable recurring tasks
